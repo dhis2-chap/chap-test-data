@@ -139,6 +139,14 @@ def batch(
         result: np.ndarray = np.maximum(0, np.round(level))
         return result
 
+    def population() -> np.ndarray:
+        """A yearly estimate, as DHIS2 usually has: the same for every period of a year, growing 2 to 3%
+        a year from 50,000 to 1.5 million in the first year (chapkit's range)."""
+        years = np.array([int(period[:4]) for period in periods])
+        since_start = np.tile(years - years[0], n_ou)
+        result: np.ndarray = np.round(per_ou(50_000, 1_500_000) * per_ou(1.02, 1.03) ** since_start)
+        return result
+
     def seasonal_0_100(position: int, count: int) -> np.ndarray:
         """A smooth seasonal covariate in [0, 100] with its own phase, as chapkit's extra covariates."""
         phase = (position + 1) / (count + 1)
@@ -150,7 +158,7 @@ def batch(
     extra = [name for name in names[1:] if name not in COLUMNS]
     values: dict[str, Callable[[], np.ndarray]] = {
         "disease_cases": cases,
-        "population": lambda: np.repeat(rng.integers(50_000, 1_500_000, n_ou), n_p).astype(float),
+        "population": population,
         "rainfall": lambda: np.round(rainfall, 2),
         "mean_temperature": lambda: np.round(temperature, 2),
         "min_temperature": lambda: np.round(temperature - per_ou(4, 8), 2),

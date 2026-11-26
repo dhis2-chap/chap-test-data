@@ -114,7 +114,7 @@ ranges:
 
 | Column | Values |
 | --- | --- |
-| population | 50,000 to 1.5 million, fixed per org unit |
+| population | A yearly estimate, the same for every week or month of a year: 50,000 to 1.5 million in the first year, growing 2 to 3% a year |
 | rainfall | 150 +/- 130 mm per period, following each org unit's own season |
 | mean_temperature | 24 +/- 7 °C on a regional cycle; min and max 4 to 8 °C below and above |
 | disease_cases | a per-org-unit level that follows the season, plus 0.06 x rainfall |

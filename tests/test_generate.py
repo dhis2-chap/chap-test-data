@@ -71,12 +71,16 @@ def test_values_stay_within_chapkit_ranges(tmp_path):
     directory, _ = generate(tmp_path, columns=12, org_units=20, periods=48, missing=0)
     frame = observations(directory)
     assert frame["disease_cases"].min() >= 0
-    assert frame["population"].between(50_000, 1_500_000).all()
+    assert frame["population"].between(50_000, 1_500_000 * 1.03**3).all()
     assert frame["rainfall"].between(0, 305).all()
     assert frame["mean_temperature"].between(15, 33).all()
     assert frame[["covariate_11", "covariate_12"]].stack().between(0, 100).all()
-    # Population is fixed per org unit.
-    assert (frame.groupby("location")["population"].nunique() == 1).all()
+    # Population is a yearly estimate: the same all year, growing 2 to 3% from one year to the next.
+    frame["year"] = frame["time_period"].str[:4]
+    assert (frame.groupby(["location", "year"])["population"].nunique() == 1).all()
+    yearly = frame.groupby(["location", "year"])["population"].first().unstack()
+    growth = (yearly.iloc[:, 1:].to_numpy() / yearly.iloc[:, :-1].to_numpy()).ravel()
+    assert ((growth > 1.019) & (growth < 1.031)).all()
 
 
 def test_metadata_carries_the_settings(tmp_path):
