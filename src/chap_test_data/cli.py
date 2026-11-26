@@ -25,6 +25,16 @@ DATASETS = Path("datasets")
 RESULTS = Path("results")
 DEFAULT = Target()
 
+# The groups generate's options are shown in, as in the docs.
+SIZE = "Size and time"
+COLUMNS = "Value columns"
+LOCATIONS = "Locations"
+FORMATS = "Other formats"
+SETTINGS = "Settings in the file"
+REJECTED = "Org units Chap must reject"
+REFUSED = "Files Chap must refuse"
+REPRODUCE = "Reproducing a dataset"
+
 
 class CompareFormat(StrEnum):
     parquet = "parquet"
@@ -50,13 +60,26 @@ class Period(StrEnum):
     monthly = "monthly"
 
 
-Dhis2 = Annotated[bool, typer.Option("--dhis2", help="Go through the DHIS2 route, as the Modeling App would.")]
-DryRun = Annotated[bool, typer.Option("--dry-run", help="Validate only (dryRun=true); nothing is imported.")]
+Dhis2 = Annotated[
+    bool,
+    typer.Option(
+        "--dhis2",
+        help="Send the upload through DHIS2's route to Chap (see --dhis2-url and --route-code), as the Modeling "
+        "App does, instead of straight to Chap.",
+    ),
+]
+DryRun = Annotated[
+    bool,
+    typer.Option(
+        "--dry-run",
+        help="Only check: Chap answers what it would import and reject, and stores nothing (dryRun=true).",
+    ),
+]
 Bandwidth = Annotated[
     float | None,
     typer.Option(
-        help="Send at most this many Mbit/s, as a slow link would (default: as fast as possible). "
-        "The time reported includes sending."
+        help="Send no faster than this many Mbit/s, to time the upload over a slow link (default: as fast as "
+        "possible). The time reported includes sending. It adds no delay; slow-link.sh adds both."
     ),
 ]
 
@@ -67,15 +90,21 @@ class State:
 
 @app.callback()
 def connection(
-    chap_url: Annotated[str, typer.Option(envvar="CHAP_URL", help="Chap's API.")] = DEFAULT.chap_url,
+    chap_url: Annotated[str, typer.Option(envvar="CHAP_URL", help="Where Chap's API answers.")] = DEFAULT.chap_url,
     chap_token: Annotated[
-        str | None, typer.Option(envvar="CHAP_API_TOKEN", help="Bearer token for Chap, if it needs one.")
+        str | None, typer.Option(envvar="CHAP_API_TOKEN", help="Chap's API token, if Chap is set up to require one.")
     ] = None,
-    dhis2_url: Annotated[str, typer.Option(envvar="DHIS2_URL", help="DHIS2, used with --dhis2.")] = DEFAULT.dhis2_url,
-    dhis2_user: Annotated[str, typer.Option(envvar="DHIS2_USER")] = DEFAULT.dhis2_user,
-    dhis2_password: Annotated[str, typer.Option(envvar="DHIS2_PASSWORD")] = DEFAULT.dhis2_password,
+    dhis2_url: Annotated[
+        str, typer.Option(envvar="DHIS2_URL", help="Where DHIS2 answers, for --dhis2.")
+    ] = DEFAULT.dhis2_url,
+    dhis2_user: Annotated[
+        str, typer.Option(envvar="DHIS2_USER", help="DHIS2 user name, for --dhis2.")
+    ] = DEFAULT.dhis2_user,
+    dhis2_password: Annotated[
+        str, typer.Option(envvar="DHIS2_PASSWORD", help="DHIS2 password, for --dhis2.")
+    ] = DEFAULT.dhis2_password,
     route_code: Annotated[
-        str, typer.Option(envvar="ROUTE_CODE", help="The route's code in DHIS2.")
+        str, typer.Option(envvar="ROUTE_CODE", help="The code of the DHIS2 route that forwards to Chap, for --dhis2.")
     ] = DEFAULT.route_code,
 ) -> None:
     """Connection settings apply to upload, check and compare; each can also come from the environment."""
@@ -97,77 +126,169 @@ def target(dhis2: bool, bandwidth: float | None = None) -> Target:
 
 @app.command()
 def generate(
-    name: Annotated[str, typer.Argument(help="Dataset name; the folder under --out.")],
-    org_units: Annotated[int, typer.Option(help="Number of org units.")] = 100,
-    years: Annotated[int, typer.Option(help="Years of data.")] = 10,
-    periods: Annotated[int | None, typer.Option(help="Number of periods, instead of --years.")] = None,
-    period: Annotated[Period, typer.Option(help="Period type.")] = Period.weekly,
-    start_year: Annotated[int, typer.Option(help="First year of data.")] = 2016,
+    name: Annotated[str, typer.Argument(help="The dataset's name: the folder it is written to, under --out.")],
+    org_units: Annotated[
+        int, typer.Option(help="How many org units (districts or facilities).", rich_help_panel=SIZE)
+    ] = 100,
+    period: Annotated[
+        Period,
+        typer.Option(
+            help="How often there is a value: weekly (periods like 2016W01) or monthly (201601).",
+            rich_help_panel=SIZE,
+        ),
+    ] = Period.weekly,
+    years: Annotated[int, typer.Option(help="How many years of data, from --start-year.", rich_help_panel=SIZE)] = 10,
+    periods: Annotated[
+        int | None,
+        typer.Option(
+            help="How many weeks or months exactly, instead of --years (--periods 36 --period monthly is 3 years).",
+            rich_help_panel=SIZE,
+        ),
+    ] = None,
+    start_year: Annotated[int, typer.Option(help="The year the data starts.", rich_help_panel=SIZE)] = 2016,
     columns: Annotated[
         int,
         typer.Option(
-            help="Value columns, in this order: disease_cases, population, rainfall, mean_temperature, "
-            "min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation; "
-            "more adds covariate_11, ..."
+            help="How many value columns, in this order: disease_cases, population, rainfall, mean_temperature, "
+            "min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation. Above 10 you get "
+            "covariate_11, covariate_12 and so on.",
+            rich_help_panel=COLUMNS,
         ),
     ] = 10,
     column: Annotated[
         list[str] | None,
         typer.Option(
-            help="Name the value columns instead, in order; repeatable. The first is the target. "
-            "Names from the --columns list get realistic values, others a generic covariate."
+            help="Name the value columns yourself, one --column per column, in order. The first is the target (what "
+            "models predict). Names from the --columns list get realistic values, others a seasonal covariate "
+            "between 0 and 100. Replaces --columns.",
+            rich_help_panel=COLUMNS,
         ),
     ] = None,
-    geometry: Annotated[Geometry, typer.Option(help="Locations as points (facilities) or polygons (areas).")] = (
-        Geometry.point
-    ),
+    missing: Annotated[
+        float,
+        typer.Option(
+            help="The share of target values left empty, as real reporting has gaps (0.002 is 2 in 1,000).",
+            rich_help_panel=COLUMNS,
+        ),
+    ] = 0.002,
+    geometry: Annotated[
+        Geometry,
+        typer.Option(
+            help="point: each org unit is a point, like a health facility. polygon: each is an area, like a "
+            "district, with a jagged border shared with its neighbours.",
+            rich_help_panel=LOCATIONS,
+        ),
+    ] = Geometry.point,
     corners: Annotated[
         int,
         typer.Option(
-            help="Points on each polygon's border, for --geometry polygon. The default, 800, is the median of "
-            "chap-core's example boundaries; borders are jagged like real ones (3 still gives a triangle)."
+            help="How many points each area's border has, with --geometry polygon. More points draw a more "
+            "detailed border and make the file larger.",
+            rich_help_panel=LOCATIONS,
         ),
     ] = 800,
-    missing: Annotated[float, typer.Option(help="Share of missing disease_cases values.")] = 0.002,
-    seed: Annotated[
-        int | None,
-        typer.Option(help="Random seed for the same files every time (default: random, recorded in expected.json)."),
-    ] = None,
-    about: Annotated[str, typer.Option(help="Description for expected.json (default: from the settings).")] = "",
-    geojson: Annotated[bool, typer.Option("--geojson", help="Write locations as GeoJSON, not GeoParquet.")] = False,
-    metadata: Annotated[
-        bool, typer.Option(help="Write the chap.* settings; without, Chap names it after the file.")
-    ] = True,
-    masked: Annotated[
-        list[str] | None, typer.Option(help="Masked range of the target, START:END (e.g. 201801:201803); repeatable.")
-    ] = None,
-    spec_version: Annotated[str, typer.Option(help="chap.spec_version; Chap refuses anything but 1.")] = "1",
-    covariate_gaps: Annotated[
-        int, typer.Option(help="Org units missing one rainfall value; Chap rejects those org units.")
-    ] = 0,
-    drop_locations: Annotated[
-        int, typer.Option(help="Org units left out of the locations file; Chap rejects them.")
-    ] = 0,
-    duplicate_rows: Annotated[int, typer.Option(help="Rows written twice; Chap refuses the upload.")] = 0,
-    text_column: Annotated[
-        str | None, typer.Option(help="Add a text column with this name; Chap refuses the upload.")
-    ] = None,
-    drop_time_period: Annotated[
-        bool, typer.Option("--drop-time-period", help="Leave out time_period; Chap refuses the upload.")
-    ] = False,
-    not_parquet: Annotated[
-        bool, typer.Option("--not-parquet", help="Write a CSV file named observations.parquet; Chap refuses it.")
+    geojson: Annotated[
+        bool,
+        typer.Option(
+            "--geojson",
+            help="Write the locations only as locations.geojson, not locations.parquet, to test a GeoJSON upload.",
+            rich_help_panel=LOCATIONS,
+        ),
     ] = False,
     formats: Annotated[
         list[Format] | None,
         typer.Option(
             "--format",
-            help="Also write the dataset as: csv (observations.csv and locations.geojson), geojson "
-            "(locations.geojson), json-columns or json-rows (make-dataset bodies, as the Modeling App sends "
-            "today). Repeatable; Parquet is always written.",
+            help="Also write the dataset as csv, geojson, json-columns (the body the Modeling App sends today) or "
+            "json-rows (one object per value); repeat for several. Parquet is always written.",
+            rich_help_panel=FORMATS,
         ),
     ] = None,
-    out: Annotated[Path, typer.Option(help="Parent folder.")] = DATASETS,
+    masked: Annotated[
+        list[str] | None,
+        typer.Option(
+            help="Hide the target between two periods, START:END (for example 201801:201803), as a dataset with "
+            "known bad data would. Repeat for several ranges.",
+            rich_help_panel=SETTINGS,
+        ),
+    ] = None,
+    metadata: Annotated[
+        bool,
+        typer.Option(
+            help="--no-metadata writes no chap.* settings; Chap then names the dataset after the file.",
+            rich_help_panel=SETTINGS,
+        ),
+    ] = True,
+    spec_version: Annotated[
+        str,
+        typer.Option(
+            help="The file format version written to the file. Chap only reads 1, so anything else is refused.",
+            rich_help_panel=SETTINGS,
+        ),
+    ] = "1",
+    about: Annotated[
+        str,
+        typer.Option(
+            help="A description stored in expected.json (default: made from the settings).", rich_help_panel=SETTINGS
+        ),
+    ] = "",
+    covariate_gaps: Annotated[
+        int,
+        typer.Option(
+            help="The first N org units each miss one value in the last value column. Chap rejects those org units.",
+            rich_help_panel=REJECTED,
+        ),
+    ] = 0,
+    drop_locations: Annotated[
+        int,
+        typer.Option(
+            help="The last N org units have data but no location in the locations file. Chap rejects them.",
+            rich_help_panel=REJECTED,
+        ),
+    ] = 0,
+    duplicate_rows: Annotated[
+        int,
+        typer.Option(
+            help="The first N rows are written twice, so an org unit has two values for one period. Chap refuses "
+            "the upload.",
+            rich_help_panel=REFUSED,
+        ),
+    ] = 0,
+    text_column: Annotated[
+        str | None,
+        typer.Option(
+            help="Add a column with this name holding text instead of numbers. Chap refuses the upload.",
+            rich_help_panel=REFUSED,
+        ),
+    ] = None,
+    drop_time_period: Annotated[
+        bool,
+        typer.Option(
+            "--drop-time-period",
+            help="Leave out the time_period column, so Chap cannot tell when the values are from. Chap refuses the "
+            "upload.",
+            rich_help_panel=REFUSED,
+        ),
+    ] = False,
+    not_parquet: Annotated[
+        bool,
+        typer.Option(
+            "--not-parquet",
+            help="Write a CSV file named observations.parquet, as a wrongly saved file would be. Chap refuses it.",
+            rich_help_panel=REFUSED,
+        ),
+    ] = False,
+    seed: Annotated[
+        int | None,
+        typer.Option(
+            help="The same seed and options always give the same files. Without it a random seed is used and "
+            "recorded in expected.json.",
+            rich_help_panel=REPRODUCE,
+        ),
+    ] = None,
+    out: Annotated[
+        Path, typer.Option(help="The folder the dataset folder is written in.", rich_help_panel=REPRODUCE)
+    ] = DATASETS,
 ) -> None:
     """Write a synthetic dataset of any size, with the answer Chap should give in expected.json.
 
@@ -229,11 +350,15 @@ def generate(
 
 @app.command()
 def upload(
-    directory: Annotated[Path, typer.Argument(help="A dataset folder, such as datasets/03-facility-points.")],
+    directory: Annotated[
+        Path, typer.Argument(help="The dataset folder to upload, such as datasets/03-facility-points.")
+    ],
     dhis2: Dhis2 = False,
     dry_run: DryRun = False,
     bandwidth: Bandwidth = None,
-    wait: Annotated[bool, typer.Option(help="Wait for the import job and report how it ended.")] = False,
+    wait: Annotated[
+        bool, typer.Option(help="After an import, wait until Chap has stored the dataset and say how it went.")
+    ] = False,
 ) -> None:
     """Upload one dataset folder."""
     answer = upload_files(target(dhis2, bandwidth), directory, dry_run)
@@ -249,7 +374,7 @@ def upload(
 
 @app.command()
 def check(
-    root: Annotated[Path, typer.Argument(help="Folder of dataset folders.")] = DATASETS,
+    root: Annotated[Path, typer.Argument(help="The folder holding the dataset folders to check.")] = DATASETS,
     dhis2: Dhis2 = False,
 ) -> None:
     """Dry-run every dataset under ROOT and compare Chap's answer with its expected.json."""
@@ -269,19 +394,31 @@ def check(
 
 @app.command()
 def compare(
-    datasets: Annotated[list[str] | None, typer.Argument(help="Dataset names under --root.")] = None,
-    all_: Annotated[bool, typer.Option("--all", help="Every dataset expected to import (HTTP 200).")] = False,
-    root: Annotated[Path, typer.Option(help="Folder of dataset folders.")] = DATASETS,
+    datasets: Annotated[
+        list[str] | None, typer.Argument(help="The datasets to compare, by folder name under --root.")
+    ] = None,
+    all_: Annotated[
+        bool, typer.Option("--all", help="Compare every dataset Chap should import, not the ones it must refuse.")
+    ] = False,
+    root: Annotated[Path, typer.Option(help="The folder holding the dataset folders.")] = DATASETS,
     dhis2: Dhis2 = False,
     dry_run: DryRun = False,
     bandwidth: Bandwidth = None,
     formats: Annotated[
         list[CompareFormat] | None,
-        typer.Option("--format", help="Formats to upload (default: all three); repeatable."),
+        typer.Option(
+            "--format",
+            help="Which forms to upload: parquet, json-columns (what the Modeling App sends today) or json-rows "
+            "(one object per value). Repeat for several; default all three.",
+        ),
     ] = None,
-    wait: Annotated[bool, typer.Option(help="After an import, wait for the job and report the worker's time.")] = False,
-    repeat: Annotated[int, typer.Option(help="Upload each format N times and report the median time.")] = 1,
-    results: Annotated[Path, typer.Option(help="Markdown file the table is appended to.")] = RESULTS / "compare.md",
+    wait: Annotated[
+        bool,
+        typer.Option(help="After each import, wait until Chap has stored the dataset and report how long it took."),
+    ] = False,
+    repeat: Annotated[int, typer.Option(help="Upload each form N times and report the middle (median) time.")] = 1,
+    results: Annotated[Path, typer.Option(help="A Markdown file the results table is added to.")] = RESULTS
+    / "compare.md",
 ) -> None:
     """Upload datasets as Parquet and as today's two JSON bodies, and compare size and time."""
     names = list(datasets or [])
@@ -307,9 +444,11 @@ def compare(
 @app.command("time-checks")
 def time_checks(
     datasets: Annotated[
-        list[Path], typer.Argument(help="Dataset folders, such as datasets/23-org-units-100k-weekly-10y.")
+        list[Path], typer.Argument(help="The dataset folders to time, such as datasets/23-org-units-100k-weekly-10y.")
     ],
-    memory_limit: Annotated[str, typer.Option(help="DuckDB memory limit; above it, DuckDB spills to disk.")] = "1GB",
+    memory_limit: Annotated[
+        str, typer.Option(help="The most memory the checks may use, such as 1GB; beyond it they use the disk instead.")
+    ] = "1GB",
 ) -> None:
     """Time the checks a Phase 2 import would run, on the files themselves and without Chap.
 
