@@ -1,0 +1,27 @@
+# chap-test-data
+
+> Generate Chap test datasets of any size and upload, check and compare them against Chap
+
+chap-test-data makes up datasets for Chap, the DHIS2 climate and health modelling platform, in any size (10 to 100,000 org units, weekly or monthly, over any number of years), and sends them to Chap to check its answers. Install with `uv sync`, then use the `chap-test-data` command: `generate NAME` writes one dataset folder (Parquet observations, GeoParquet locations, GeoJSON org unit hierarchy, an expected.json with the answer Chap should give); `upload FOLDER` and `check` send datasets to a running Chap, straight or through a DHIS2 route; `compare` measures Parquet against the JSON the Modeling App sends today. `scripts/generate-ready-made.sh` writes a fixed set of datasets, the same every time. Every command explains its options with `--help`.
+
+
+## Start here
+
+- [Home](https://dhis2-chap.github.io/chap-test-data/index.md): What a dataset is, and the words used
+- [Getting started](https://dhis2-chap.github.io/chap-test-data/getting-started/index.md): Install, start Chap and DHIS2, connection settings
+
+## Datasets
+
+- [Ready-made datasets](https://dhis2-chap.github.io/chap-test-data/ready-made/index.md): The fixed set of test datasets and the answer Chap should give for each
+- [Generating your own](https://dhis2-chap.github.io/chap-test-data/generating/index.md): Every option of `chap-test-data generate`, the formats, the values and the org unit hierarchy
+
+## Using them with Chap
+
+- [Uploading and checking](https://dhis2-chap.github.io/chap-test-data/uploading/index.md): `upload`, `check`, and the same with curl
+- [Comparing with JSON](https://dhis2-chap.github.io/chap-test-data/comparing/index.md): `compare`, and uploads over a slow link
+- [Timing the checks](https://dhis2-chap.github.io/chap-test-data/checks/index.md): `time-checks`
+
+## Optional
+
+- [About](https://dhis2-chap.github.io/chap-test-data/about/index.md): Why the tool exists, related projects, license
+

@@ -1,0 +1,570 @@
+# chap-test-data
+
+> Generate Chap test datasets of any size and upload, check and compare them against Chap
+
+chap-test-data makes up datasets for Chap, the DHIS2 climate and health modelling platform, in any size (10 to 100,000 org units, weekly or monthly, over any number of years), and sends them to Chap to check its answers. Install with `uv sync`, then use the `chap-test-data` command: `generate NAME` writes one dataset folder (Parquet observations, GeoParquet locations, GeoJSON org unit hierarchy, an expected.json with the answer Chap should give); `upload FOLDER` and `check` send datasets to a running Chap, straight or through a DHIS2 route; `compare` measures Parquet against the JSON the Modeling App sends today. `scripts/generate-ready-made.sh` writes a fixed set of datasets, the same every time. Every command explains its options with `--help`.
+
+
+# Start here
+
+# chap-test-data
+
+Made-up datasets for [Chap](https://chap.dhis2.org), in any size, and the tools to send them to Chap and check its answers.
+
+- **Generate** datasets from 10 to 100,000 org units over any number of years, weekly or monthly, with case counts, covariates and climate data.
+- **Know the answer in advance.** Each dataset comes with an `expected.json` saying what Chap should answer, including for the files it must refuse.
+- **Upload and check** against a running Chap, straight or through DHIS2, with the `chap-test-data` command or with plain curl.
+- **Compare** the new Parquet upload with the JSON the Modeling App sends today, on a fast link or a slow, distant one.
+
+For AI agents: [llms.txt](https://dhis2-chap.github.io/chap-test-data/llms.txt) says what the tool does and links to each page as Markdown; [llms-full.txt](https://dhis2-chap.github.io/chap-test-data/llms-full.txt) is all of it in one file.
+
+## In one minute
+
+```
+git clone https://github.com/dhis2-chap/chap-test-data && cd chap-test-data
+uv sync
+# 16 ready-made datasets in datasets/
+scripts/generate-ready-made.sh --standard-only
+uv run chap-test-data generate my-country --org-units 300 \
+  --geometry polygon --format geojson
+# needs a running Chap; see Getting started
+uv run chap-test-data check
+```
+
+## Words used here
+
+| Word      | Meaning                                                                                            |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| org unit  | A place data is reported for, as DHIS2 calls it: a district, or a health facility.                 |
+| target    | The value a model predicts: the case counts, `disease_cases` unless you name the columns yourself. |
+| covariate | Any other value column a model can use, such as rainfall or temperature.                           |
+| period    | One week (`2016W01`) or one month (`201601`) of data.                                              |
+| Parquet   | A compact file format for tables. GeoParquet is the same with a map shape per row.                 |
+| route     | DHIS2's way of passing requests on to another service. The Modeling App reaches Chap through one.  |
+| dry run   | An upload Chap only checks: it answers what it would import, and stores nothing.                   |
+
+## A dataset
+
+Every dataset is a folder, named after the dataset, holding the same data in several files:
+
+| File                        | What it holds                                                                                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `observations.parquet`      | One row per org unit and period: `location` (the org unit's id), `time_period`, then one number column per value. The dataset's settings, such as its name, are stored inside the file. |
+| `locations.parquet`         | One row per org unit: its id, `name`, `parent` (the area it lies in), `level` (3 for districts, 4 for facilities) and its point or shape on the map.                                    |
+| `locations.geojson`         | The same locations as GeoJSON, which most map tools open.                                                                                                                               |
+| `hierarchy.geojson`         | The areas above the org units, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a `parent` one level up.                          |
+| `make-dataset.columns.json` | The same dataset as the JSON the Modeling App sends today.                                                                                                                              |
+| `expected.json`             | What Chap should answer to a dry run of the Parquet files, and the seed the dataset was made with.                                                                                      |
+
+`observations.parquet`, `locations.parquet`, `hierarchy.geojson` and `expected.json` are always written; the others when you ask for them with `--format`, as the ready-made datasets do. The file format is described in chap-core's [dataset files documentation](https://github.com/dhis2-chap/chap-core/blob/feat/dataset-parquet-upload/docs/webapi/dataset-files.md).
+
+# Getting started
+
+## Install
+
+You need [uv](https://docs.astral.sh/uv/), which also installs the Python version it needs (3.13).
+
+```
+git clone https://github.com/dhis2-chap/chap-test-data && cd chap-test-data
+uv sync
+uv run chap-test-data --help
+```
+
+That is all you need to generate datasets. To upload them you also need a running Chap, and to upload through DHIS2 a running DHIS2. Both run in Docker, as below.
+
+## Start Chap
+
+The Parquet upload is on the chap-core branch `feat/dataset-parquet-upload`. From a chap-core checkout next to this one:
+
+```
+cd ../chap-core
+git switch feat/dataset-parquet-upload
+docker compose -p chap-test-data up -d --build
+curl localhost:8000/health
+```
+
+`-p chap-test-data` gives this Chap its own name in Docker, so it and its data stay apart from any other Chap you run. It answers on `http://localhost:8000`, without a token unless `CHAP_API_TOKEN` is set in chap-core's `.env`.
+
+## Start DHIS2
+
+The Modeling App does not talk to Chap directly: it goes through a DHIS2 route, which passes its requests on to Chap. To test that path, `dhis2/` holds a DHIS2 that runs next to Chap, and a script that creates a route named `chap` pointing at it. The first start takes a minute or two.
+
+```
+cd dhis2
+docker compose up -d          # DHIS2 2.43.2.1
+# waits until DHIS2 is up, then creates the route chap -> http://chap:8000/**
+./setup-route.sh
+cd ..
+```
+
+For another DHIS2 version, remove the old one with its data first: `docker compose down -v`, then `DHIS2_TAG=2.42.7.1 docker compose up -d`. To use a DHIS2 that runs elsewhere, point the connection settings below at it, and make sure it allows the route's address in its `route.remote_servers_allowed` setting.
+
+## Connection settings
+
+`upload`, `check` and `compare` find Chap and DHIS2 through these settings. Each can be given as an option before the command (`uv run chap-test-data --chap-url http://... check`) or as an environment variable.
+
+| Option             | Environment variable | Default                 | What it is                                                   |
+| ------------------ | -------------------- | ----------------------- | ------------------------------------------------------------ |
+| `--chap-url`       | `CHAP_URL`           | `http://localhost:8000` | Where Chap's API answers.                                    |
+| `--chap-token`     | `CHAP_API_TOKEN`     | none                    | Chap's API token, if Chap is set up to require one.          |
+| `--dhis2-url`      | `DHIS2_URL`          | `http://localhost:8080` | Where DHIS2 answers, for uploads with `--dhis2`.             |
+| `--dhis2-user`     | `DHIS2_USER`         | `admin`                 | The DHIS2 user name.                                         |
+| `--dhis2-password` | `DHIS2_PASSWORD`     | `district`              | The DHIS2 password.                                          |
+| `--route-code`     | `ROUTE_CODE`         | `chap`                  | The code of the DHIS2 route that passes requests on to Chap. |
+
+The curl scripts read the same environment variables.
+
+## Stop
+
+This removes both, with their data:
+
+```
+cd dhis2 && docker compose down -v && cd ..
+cd ../chap-core && docker compose -p chap-test-data down -v
+```
+
+## Developing
+
+| Command      | What it does                                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------- |
+| `make lint`  | Fixes and checks the code style, and checks the types (ruff, mypy and pyright, as chap-core).      |
+| `make test`  | Runs the tests. They need no running Chap.                                                         |
+| `make docs`  | Builds this site into `site/`. `make docs-serve` shows it at http://127.0.0.1:8000 while you edit. |
+| `make build` | Builds the package.                                                                                |
+
+CI runs them on every push.
+# Datasets
+
+# Ready-made datasets
+
+A set of datasets for testing Chap, made with one script: the usual sizes, the cases Chap must reject or refuse, and a few very large ones.
+
+```
+scripts/generate-ready-made.sh                  # all, with the large ones: minutes
+scripts/generate-ready-made.sh --standard-only  # the 16 standard ones: seconds
+```
+
+All of them, with the large ones, take a few GB. They are written to `datasets/` with a fixed seed (42), so they are the same on every machine. Each is written as Parquet, as GeoJSON locations (`locations.geojson`) and as the JSON body the Modeling App sends today (`make-dataset.columns.json`). The datasets Chap must refuse are written as Parquet only.
+
+## Standard
+
+They use 4 value columns: disease_cases, population, rainfall and mean_temperature.
+
+| Dataset                   | Size                                                                             | Expected answer         |
+| ------------------------- | -------------------------------------------------------------------------------- | ----------------------- |
+| `01-small-monthly`        | 10 districts x 36 months                                                         | 10 imported             |
+| `02-district-weekly`      | 150 districts x 365 weeks                                                        | 150 imported            |
+| `03-facility-points`      | 1,500 facilities x 365 weeks                                                     | 1,500 imported          |
+| `04-facility-polygons`    | 1,500 areas x 365 weeks, 2,048 points per border                                 | 1,500 imported          |
+| `05-facility-points-2000` | 2,000 facilities x 365 weeks                                                     | 2,000 imported          |
+| `06-geojson-locations`    | 50 districts x 104 weeks, locations only as GeoJSON                              | 50 imported             |
+| `07-masked-ranges`        | 20 x 36 months, cases masked 201801 to 201803 by the metadata                    | 20 imported             |
+| `08-no-metadata`          | 10 x 24 months, no `chap.*` keys; the name comes from the file name              | 10 imported             |
+| `09-covariate-gaps`       | 20 org units, 3 miss one covariate value                                         | 17 imported, 3 rejected |
+| `10-missing-locations`    | 20 org units, 4 missing from the locations file                                  | 16 imported, 4 rejected |
+| `11-bad-duplicate-rows`   | one row twice                                                                    | 422                     |
+| `12-bad-text-column`      | a text column in the observations                                                | 422                     |
+| `13-bad-no-time-period`   | no `time_period` column                                                          | 422                     |
+| `14-bad-spec-version`     | `chap.spec_version` 2                                                            | 422                     |
+| `15-bad-not-parquet`      | a CSV file named `observations.parquet`                                          | 422                     |
+| `16-named-columns`        | 20 x 36 months, columns malaria_cases, population, precipitation, temperature_2m | 20 imported             |
+
+## Large
+
+10 years with all 10 value columns. Only the first fits what Chap's Parquet upload accepts today; the others are the sizes Chap's stored datasets are designed for.
+
+| Dataset                         | Rows                         | Observations file | Expected answer                        |
+| ------------------------------- | ---------------------------- | ----------------- | -------------------------------------- |
+| `20-phase1-max-weekly-10y`      | 1,900 x 522 weeks = 991,800  | 15 MB             | 1,900 imported                         |
+| `21-facilities-20k-weekly-10y`  | 20,000 x 522 = 10.4 million  | 161 MB            | 413: over Chap's 100 MB per-file limit |
+| `22-org-units-100k-monthly-10y` | 100,000 x 120 = 12 million   | 177 MB            | 413: over Chap's 100 MB per-file limit |
+| `23-org-units-100k-weekly-10y`  | 100,000 x 522 = 52.2 million | 753 MB            | 413: over Chap's 100 MB per-file limit |
+
+The limits are Chap's own, not DHIS2's: its Parquet upload accepts up to 100 MB per file and 1 million rows. They keep one upload from taking too much of the API's memory, because Chap reads the whole dataset into memory as it imports it. The file size is checked first, while the upload arrives, so these three get 413 (too large); under 100 MB, 10 million rows would get 422 (too many rows) instead. A DHIS2 server may have its own size limit in front of it, such as nginx's `client_max_body_size`, which also answers 413.
+
+`23` gets no JSON body: it would be about 5 GB.
+
+Each one is a single [`generate`](https://dhis2-chap.github.io/chap-test-data/generating/index.md) command in `scripts/generate-ready-made.sh`, so a variation of any of them is a matter of changing its options.
+
+# Generating your own
+
+`chap-test-data generate NAME` writes one dataset of any size and shape:
+
+```
+uv run chap-test-data generate my-test --org-units 5000 \
+  --years 5 --period monthly
+uv run chap-test-data generate districts --org-units 300 \
+  --geometry polygon --format geojson
+uv run chap-test-data generate malaria --column malaria_cases \
+  --column population --column precipitation
+uv run chap-test-data generate gaps --org-units 50 \
+  --covariate-gaps 5 --drop-locations 2
+uv run chap-test-data generate --help
+```
+
+The name is the folder the dataset is written to, under `datasets/` (change it with `--out`). All options are optional. For a ready-made set to start from, see [Ready-made datasets](https://dhis2-chap.github.io/chap-test-data/ready-made/index.md).
+
+## Options
+
+### Size and time
+
+| Option                                  | Default | What it does                                                                                        |
+| --------------------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| `--org-units N`                         | 100     | How many org units (districts or facilities) the dataset has.                                       |
+| `--period weekly` or `--period monthly` | weekly  | How often there is a value: once a week (periods like `2016W01`) or once a month (`201601`).        |
+| `--years N`                             | 10      | How many years of data, starting in `--start-year`.                                                 |
+| `--periods N`                           |         | How many weeks or months exactly, instead of `--years`. `--periods 36 --period monthly` is 3 years. |
+| `--start-year YEAR`                     | 2016    | The year the data starts.                                                                           |
+
+### Value columns
+
+| Option            | Default | What it does                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--columns N`     | 10      | How many value columns, taken in this order: disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation. Above 10 you get covariate_11, covariate_12 and so on.                                                                                                               |
+| `--column NAME`   |         | Name the value columns yourself, one `--column` per column, in order. The first is the target (what models predict). Names from the list above get realistic values; other names get a seasonal covariate between 0 and 100. Replaces `--columns`.                                                                                                            |
+| `--missing SHARE` | 0.002   | Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these org units are still imported (a gap in a covariate is different: see `--covariate-gaps`). The case counts are the target, the first value column. |
+
+### Locations
+
+| Option                        | Default | What it does                                                                                                                                                                                                      |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--geometry point`            | default | Each org unit is a point, like a health facility.                                                                                                                                                                 |
+| `--geometry polygon`          |         | Each org unit is an area, like a district, with a jagged border shared with its neighbours.                                                                                                                       |
+| `--corners N`                 | 800     | How many points each area's border has, with `--geometry polygon`. More points draw a more detailed border and make the file larger.                                                                              |
+| `--districts-per-region N`    | 10      | About how many districts make up a region (level 2) in `hierarchy.geojson`. Regions group neighbouring districts, so their sizes vary around this: with 1,000 districts you get 100 regions of 5 to 17 districts. |
+| `--facilities-per-district N` | 50      | How many facilities a district (level 3) has on average, with `--geometry point`. Districts differ, as real ones do: with 1,500 facilities you get 30 districts of 21 to 134 facilities.                          |
+| `--geojson`                   |         | Write the locations only as `locations.geojson`, not as `locations.parquet`. Use it to test a GeoJSON upload.                                                                                                     |
+
+### Other formats
+
+| Option            | Default | What it does                                                                                                                                                       |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--format FORMAT` |         | Also write the dataset in another format; repeat for several. `csv`, `geojson`, `json-columns` or `json-rows`; see [Formats](#formats). Parquet is always written. |
+
+### Settings in the file
+
+These go into the observations file's `chap.*` metadata, which Chap reads as the dataset's settings.
+
+| Option                   | Default | What it does                                                                                                                                  |
+| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--masked START:END`     |         | Hide the target between two periods, for example `--masked 201801:201803`, as a dataset with known bad data would. Repeat for several ranges. |
+| `--no-metadata`          |         | Write no `chap.*` settings. Chap then names the dataset after the file and uses its defaults.                                                 |
+| `--spec-version VERSION` | 1       | The file format version written to the file. Chap only reads version 1, so anything else is refused.                                          |
+| `--about TEXT`           |         | A description stored in `expected.json`. Without it, one is made from the settings.                                                           |
+
+### Org units Chap must reject
+
+Chap accepts the dataset but leaves these org units out, and says which and why. `expected.json` counts them as rejected.
+
+| Option               | Default | What it does                                                                                                               |
+| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `--covariate-gaps N` | 0       | The first N org units each miss one value in the last value column. Chap rejects an org unit with a gap in a covariate.    |
+| `--drop-locations N` | 0       | The last N org units have data but no location in the locations file. Chap rejects an org unit it cannot place on the map. |
+
+### Files Chap must refuse
+
+Chap refuses the whole upload with an error (HTTP 422). `expected.json` holds the error to expect.
+
+| Option               | Default | What it does                                                                           |
+| -------------------- | ------- | -------------------------------------------------------------------------------------- |
+| `--duplicate-rows N` | 0       | The first N rows are written twice, so an org unit has two values for the same period. |
+| `--text-column NAME` |         | Adds a column with this name holding text instead of numbers.                          |
+| `--drop-time-period` |         | Leaves out the `time_period` column, so Chap cannot tell when the values are from.     |
+| `--not-parquet`      |         | Writes a CSV file named `observations.parquet`, as a wrongly saved file would be.      |
+
+### Reproducing a dataset
+
+| Option         | Default    | What it does                                                                                                                                                    |
+| -------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--seed N`     | random     | The same seed and options always give the same files. Without it a random seed is used, and `expected.json` records it, so you can make the same dataset again. |
+| `--out FOLDER` | `datasets` | The folder the dataset folder is written in.                                                                                                                    |
+
+The observations are written in batches of org units, so memory stays small: 52 million rows take about 25 s and 650 MB. The other formats are converted from the Parquet files in batches too.
+
+## Formats
+
+| `--format`     | Files                                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| (always)       | `observations.parquet`, `locations.parquet`, and `hierarchy.geojson`: the country, regions and districts above the org units |
+| `geojson`      | `locations.geojson`                                                                                                          |
+| `csv`          | `observations.csv` (time_period, location, then the values) and `locations.geojson`                                          |
+| `json-columns` | `make-dataset.columns.json`: the `make-dataset` body with `providedDataColumns`, as the Modeling App sends today             |
+| `json-rows`    | `make-dataset.rows.json`: the older body, one object per value                                                               |
+
+## The values
+
+Values follow chapkit's `TestDataGenerator`, so models tested with either tool see the same ranges:
+
+| Column           | Values                                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| population       | A yearly estimate, the same for every week or month of a year: 50,000 to 1.5 million in the first year, growing 2 to 3% a year |
+| rainfall         | 150 +/- 130 mm per period, following each org unit's own season                                                                |
+| mean_temperature | 24 +/- 7 °C on a regional cycle; min and max 4 to 8 °C below and above                                                         |
+| disease_cases    | a per-org-unit level that follows the season, plus 0.06 x rainfall                                                             |
+| other covariates | seasonal, between 0 and 100                                                                                                    |
+
+The schema is Chap's, not chapkit's: periods as Chap stores them (`2016W01`, `201601`, with real ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.
+
+## The map
+
+- **Districts** (`--geometry polygon`) tile a country-like map near Nairobi: no gaps, no overlaps, and jagged borders shared by both neighbours. A border has about 800 points by default, the median of chap-core's example boundaries, and is about 1.7 times as long as a circle of the same area, as real borders are (1.4 to 1.9 in those files).
+- **Facilities** (`--geometry point`) cluster around a few towns in each district, always inside it: about 50 facilities per district.
+- Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.
+
+## The hierarchy
+
+As in DHIS2, the org units sit in a tree of areas, written to `hierarchy.geojson`:
+
+| Level | Area                                                        | With `--geometry polygon`       | With `--geometry point`                                                        |
+| ----- | ----------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| 1     | Country                                                     | in `hierarchy.geojson`          | in `hierarchy.geojson`                                                         |
+| 2     | Regions, about 10 districts each (`--districts-per-region`) | in `hierarchy.geojson`          | in `hierarchy.geojson`                                                         |
+| 3     | Districts                                                   | the org units, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each (`--facilities-per-district`) |
+| 4     | Facilities                                                  |                                 | the org units, in `locations.*`                                                |
+
+Every area and org unit has a `level`, and a `parent`: the id of the area one level up that it lies inside. The country has no parent. The areas of each level tile the whole country, and each region is a single piece. Open `hierarchy.geojson` with `locations.geojson` in a map tool to see the org units inside their districts and regions.
+# Using them with Chap
+
+# Uploading and checking
+
+Start Chap first, and DHIS2 too if you want to go through it (see [Getting started](https://dhis2-chap.github.io/chap-test-data/getting-started/index.md)).
+
+## Upload one dataset
+
+```
+# only check
+uv run chap-test-data upload --dry-run datasets/03-facility-points
+# import, and wait until stored
+uv run chap-test-data upload --wait datasets/03-facility-points
+```
+
+`upload` sends the dataset folder's `observations.parquet` and its locations file to Chap, and prints Chap's answer: how many org units it will import, which it rejects and why, or the error if it refuses the files.
+
+| Option             | What it does                                                                                                                                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`        | Only check: Chap answers what it would import and reject, and stores nothing.                                                                                                                                                                       |
+| `--wait`           | After a real import, wait until Chap has stored the dataset, then print its id (`dataset id: 42`), or the error if storing failed. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years. |
+| `--dhis2`          | Send the upload through the DHIS2 route, as the Modeling App does, instead of straight to Chap.                                                                                                                                                     |
+| `--bandwidth MBIT` | Send no faster than this many Mbit/s, to time the upload over a slow link. The time printed includes the sending. See [Comparing with JSON](https://dhis2-chap.github.io/chap-test-data/comparing/index.md) for a slow link with delay as well.     |
+
+## Check every dataset
+
+```
+# every dataset folder in datasets/
+uv run chap-test-data check
+# the same through the DHIS2 route
+uv run chap-test-data check --dhis2
+# the dataset folders in another folder
+uv run chap-test-data check my-datasets/
+```
+
+`check` dry-runs every dataset folder that has an `expected.json`, and compares Chap's answer with it: the number of org units imported and rejected, or the error Chap gives. It prints one line per dataset, `ok` or `FAIL`, and ends with an error if any dataset gave another answer.
+
+| Option    | What it does                                                          |
+| --------- | --------------------------------------------------------------------- |
+| `FOLDER`  | The folder holding the dataset folders. Default `datasets`.           |
+| `--dhis2` | Send the uploads through the DHIS2 route instead of straight to Chap. |
+
+## Through DHIS2
+
+With `--dhis2` the upload goes to DHIS2's route for Chap, which passes it on, as the Modeling App's uploads do. The answer is the same as without DHIS2. DHIS2 2.42.3 and later send each file on twice ([DHIS2-22596](https://dhis2.atlassian.net/browse/DHIS2-22596)); Chap uses one copy and ignores the other.
+
+## With curl
+
+The same, without Python: `scripts/upload-curl.sh` uploads one dataset and `scripts/check-curl.sh` checks them all.
+
+```
+scripts/upload-curl.sh --dry-run datasets/03-facility-points
+scripts/upload-curl.sh --dry-run --json datasets/03-facility-points
+scripts/upload-curl.sh --dhis2 --dry-run datasets/03-facility-points
+scripts/upload-curl.sh --wait datasets/03-facility-points
+scripts/check-curl.sh
+scripts/check-curl.sh --dhis2
+```
+
+| Option           | Script                   | What it does                                                                                                                                              |
+| ---------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--dry-run`      | `scripts/upload-curl.sh` | Only check; Chap stores nothing.                                                                                                                          |
+| `--wait`         | `scripts/upload-curl.sh` | After a real import, wait until Chap has stored the dataset, then print its id.                                                                           |
+| `--dhis2`        | both                     | Go through the DHIS2 route instead of straight to Chap.                                                                                                   |
+| `--json`         | `scripts/upload-curl.sh` | Send the folder's `make-dataset.columns.json` to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs `--format json-columns`. |
+| `BANDWIDTH=MBIT` | `scripts/upload-curl.sh` | An environment variable: send no faster than this many Mbit/s.                                                                                            |
+
+Both read the [connection settings](https://dhis2-chap.github.io/chap-test-data/getting-started/#connection-settings) from the environment, and print each command they run, with the password and token hidden. Or with curl alone:
+
+```
+curl -X POST "http://localhost:8000/v1/crud/datasets/files?dryRun=true" \
+  -F observations=@datasets/03-facility-points/observations.parquet \
+  -F locations=@datasets/03-facility-points/locations.parquet
+
+ROUTE=http://localhost:8080/api/routes/chap/run
+curl -u admin:district -X POST "$ROUTE/v1/crud/datasets/files?dryRun=true" \
+  -F observations=@datasets/03-facility-points/observations.parquet \
+  -F locations=@datasets/03-facility-points/locations.parquet
+```
+
+If Chap needs a token, add `-H "Authorization: Bearer <token>"` to the first.
+
+## How long it takes
+
+Chap answers in 4 to 6 seconds for 1,500 to 2,000 facilities of weekly data over 7 years, and in about 20 seconds when the org units are detailed areas, because checking the shapes takes most of the time. It then stores the dataset in the background: about a minute for 1,500 facilities.
+
+The DHIS2 route has a timeout (30 seconds in the Modeling App, 60 at most), but it only starts once the upload has arrived, so a slow upload does not use it up.
+
+# Comparing with JSON
+
+Today the Modeling App sends a dataset to Chap as JSON, to Chap's `make-dataset` endpoint. This page compares that with sending the same data as Parquet files: how large the upload is, and how long it takes.
+
+## On one machine
+
+`compare` uploads the same dataset in three forms to the same Chap, and prints a table of their sizes and times:
+
+| Form           | What is sent                                                           |
+| -------------- | ---------------------------------------------------------------------- |
+| `parquet`      | The dataset's Parquet files, to Chap's new upload.                     |
+| `json-columns` | A JSON body with one list per column, as the Modeling App sends today. |
+| `json-rows`    | A JSON body with one object per value, an older form.                  |
+
+The JSON bodies hold the same data, settings and locations as the Parquet files.
+
+```
+uv run chap-test-data compare 02-district-weekly 03-facility-points \
+  --dry-run --repeat 3
+uv run chap-test-data compare 03-facility-points --dhis2 --dry-run \
+  --format parquet --format json-columns
+uv run chap-test-data compare 03-facility-points --wait
+```
+
+| Option             | What it does                                                                                                                                                     |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATASET ...`      | The datasets to compare, by folder name.                                                                                                                         |
+| `--all`            | Compare every dataset Chap should import, not the ones it must refuse. This includes a dataset of a million rows, whose one-object-per-value JSON is several GB. |
+| `--format FORM`    | Only these forms: `parquet`, `json-columns` or `json-rows`. Repeat for several; default all three.                                                               |
+| `--dry-run`        | Only check; Chap stores nothing. The times are then Chap's checking only.                                                                                        |
+| `--wait`           | After each real import, wait until Chap has stored the dataset and report how long that took.                                                                    |
+| `--repeat N`       | Upload each form N times and report the middle (median) time. Default 1.                                                                                         |
+| `--dhis2`          | Go through the DHIS2 route instead of straight to Chap.                                                                                                          |
+| `--bandwidth MBIT` | Send no faster than this many Mbit/s.                                                                                                                            |
+| `--root FOLDER`    | The folder holding the dataset folders. Default `datasets`.                                                                                                      |
+| `--results FILE`   | A Markdown file the table is added to. Default `results/compare.md`.                                                                                             |
+
+Results for dry runs straight to Chap on a laptop, the middle of 3 runs:
+
+| Dataset                              | Form         | Upload size     | Time            |
+| ------------------------------------ | ------------ | --------------- | --------------- |
+| 1,500 facilities x 365 weeks         | Parquet      | 3.8 MB          | 0.98 s          |
+|                                      | JSON columns | 31.4 MB (8.2x)  | 1.37 s (1.4x)   |
+|                                      | JSON rows    | 211.5 MB (55x)  | 15.18 s (15.5x) |
+| 2,000 facilities x 365 weeks         | Parquet      | 5.1 MB          | 1.30 s          |
+|                                      | JSON columns | 41.9 MB (8.2x)  | 1.87 s (1.4x)   |
+|                                      | JSON rows    | 282.0 MB (55x)  | 20.66 s (15.9x) |
+| 1,500 areas, 2,048 points per border | Parquet      | 40.8 MB         | 10.57 s         |
+|                                      | JSON columns | 158.1 MB (3.9x) | 13.00 s (1.2x)  |
+|                                      | JSON rows    | 338.2 MB (8.3x) | 26.14 s (2.5x)  |
+| 150 districts x 365 weeks            | Parquet      | 1.2 MB          | 0.43 s          |
+|                                      | JSON columns | 6.3 MB (5.1x)   | 0.40 s (0.9x)   |
+|                                      | JSON rows    | 24.3 MB (20x)   | 1.92 s (4.4x)   |
+
+- **Size:** for facilities, the Parquet upload is about 8 times smaller than today's JSON. How much smaller depends on the data: smooth values pack tighter than noisy ones. With detailed areas the shapes make up most of the upload, and the gap narrows to about 4 times.
+- **Time:** Chap checks Parquet 1.2 to 1.4 times faster. For small datasets the two are about the same.
+- **Storing** takes the same time whatever form the data came in (about a minute for 1,500 facilities), because Chap stores all three the same way.
+
+## Over a real network
+
+On one machine, sending costs almost nothing. In real use the upload travels from the user's browser to DHIS2 and on to Chap, often over a slow or distant connection, and then the size of the upload is what counts.
+
+`scripts/upload-slow-link.sh` measures that. It sends the upload from a small Docker container whose connection is slowed down for real: each round trip is delayed, and the speed is capped.
+
+```
+scripts/upload-slow-link.sh --delay 100ms --rate 10mbit --dry-run datasets/03-facility-points
+scripts/upload-slow-link.sh --delay 100ms --rate 10mbit --dry-run \
+  --json datasets/03-facility-points
+scripts/upload-slow-link.sh --delay 300ms --rate 2mbit --dhis2 \
+  --dry-run datasets/03-facility-points
+```
+
+| Option                           | What it does                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `--delay TIME`                   | The delay added to each round trip, such as `100ms` for a distant server. Default `100ms`.          |
+| `--rate SPEED`                   | The upload speed, such as `10mbit` or `2mbit`. Default `10mbit`.                                    |
+| `--dry-run`, `--dhis2`, `--json` | As for `scripts/upload-curl.sh`: only check, go through DHIS2, or send the JSON instead of Parquet. |
+
+It needs Chap running as in [Getting started](https://dhis2-chap.github.io/chap-test-data/getting-started/index.md), and DHIS2 for `--dhis2`.
+
+Results for 1,500 facilities of weekly data over 7 years, through DHIS2, only checking:
+
+| Connection              | Parquet (3.8 MB) | Today's JSON (31.4 MB) | JSON takes        |
+| ----------------------- | ---------------- | ---------------------- | ----------------- |
+| Same machine            | 1.1 s            | 1.4 s                  | 1.2 times as long |
+| 50 Mbit/s, 20 ms delay  | 1.9 s            | 6.7 s                  | 3.6 times         |
+| 20 Mbit/s, 50 ms delay  | 3.1 s            | 14.7 s                 | 4.8 times         |
+| 10 Mbit/s, 100 ms delay | 5.0 s            | 28.1 s                 | 5.6 times         |
+| 2 Mbit/s, 300 ms delay  | 18.9 s           | 134.1 s                | 7.1 times         |
+
+Straight to Chap, without DHIS2, the times are within a tenth of a second of these.
+
+- **The slower the connection, the bigger the gain,** up to the 8 times smaller upload: on a fast connection Chap's own work takes most of the time, on a slow one the sending does.
+- **Uploading is the slow direction.** Many connections send far slower than they receive, and a dataset is sent.
+- **The JSON cannot be shrunk on the way.** Browsers do not compress what they send, and DHIS2 routes remove compression, so the 8 times difference is what travels.
+- **The route's timeout starts once the upload has arrived,** so a slow upload does not fail, but the user waits for all of it.
+
+# Timing the checks
+
+Today Chap stores a dataset one value per database row, in the background after the upload. Chap is moving to keeping each dataset as its Parquet files instead. Then an upload could be checked and stored while the user waits, if checking the files is fast enough.
+
+`time-checks` answers that. It runs the checks Chap would make on each dataset folder you give it, straight on the files and without Chap, and says how long each took and what it found:
+
+| Check                                | What it looks for                                          |
+| ------------------------------------ | ---------------------------------------------------------- |
+| duplicate (location, time_period)    | An org unit with more than one row for the same period     |
+| periods per org unit, first and last | How many periods each org unit has, and its first and last |
+| org units with a covariate gap       | Org units missing a value in a covariate                   |
+| org units missing from locations     | Org units with data but no location                        |
+
+```
+uv run chap-test-data time-checks \
+  datasets/21-facilities-20k-weekly-10y datasets/23-org-units-100k-weekly-10y
+```
+
+| Option                | What it does                                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FOLDER ...`          | The dataset folders to check.                                                                                                                                      |
+| `--memory-limit SIZE` | The most memory the checks may use, such as `1GB` (the default). Beyond it they use the disk instead, so a large dataset is slower but does not run out of memory. |
+
+The checks run on DuckDB, a database that reads Parquet files directly; it stands in for whatever Chap ends up using.
+
+Results on a laptop with 12 cores:
+
+| Dataset                                               | All checks | Memory used at most |
+| ----------------------------------------------------- | ---------- | ------------------- |
+| 20,000 facilities, 10 years weekly: 10.4 million rows | 0.2 s      | about 0.9 GB        |
+| 100,000 org units, 10 years weekly: 52.2 million rows | 3.7 s      | about 1.6 GB        |
+
+Nearly all of the time goes to looking for duplicates. Even the largest dataset is checked in a few seconds, well within the time a DHIS2 route waits for an answer.
+# Optional
+
+# About
+
+chap-test-data is part of [Chap](https://chap.dhis2.org), the Climate and Health modelling platform built around DHIS2. Chap forecasts climate-sensitive diseases such as malaria and dengue from health data reported in DHIS2 and from climate data, and helps countries judge how far those forecasts can be trusted.
+
+## Why it exists
+
+Chap is moving from datasets sent as JSON and stored one value per database row to datasets sent and kept as Parquet files. Testing that needs data in every size, from a handful of districts to 100,000 org units over ten years, and in every shape Chap must accept, accept in part or refuse. Real DHIS2 data cannot be shared freely and does not come in every size, so this tool makes it up: close enough to real data to behave like it, with the answer Chap should give known in advance.
+
+It also measures what the change brings: how much smaller and faster Parquet uploads are than today's JSON, straight to Chap and through DHIS2, on fast and on slow, distant connections.
+
+## Related projects
+
+| Project                                              | What it is                                                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [chap-core](https://github.com/dhis2-chap/chap-core) | The Chap platform: its API, database, model runs and evaluation.                                 |
+| [chapkit](https://github.com/dhis2-chap/chapkit)     | The toolkit for building Chap models as services. Its test data sets the value ranges used here. |
+| [Chap documentation](https://chap.dhis2.org)         | The Chap project, its models and how to use the Modeling App.                                    |
+
+## Contributing
+
+Issues and pull requests are welcome on [GitHub](https://github.com/dhis2-chap/chap-test-data). Run `make lint` and `make test` before you push; CI runs both, and builds the package and this site.
+
+## License
+
+[GNU Affero General Public License v3](https://github.com/dhis2-chap/chap-test-data/blob/main/LICENSE), as chap-core. The datasets it makes are made up and free to use.
