@@ -300,30 +300,61 @@ def jagged_areas(n: int, corners: int, rng: np.random.Generator) -> tuple[np.nda
     return sites[chosen], polygons
 
 
-def locations(ids: np.ndarray, corners: int | None, seed: int) -> gpd.GeoDataFrame:
-    """Org units near Nairobi, laid out on a grid as chapkit's generator does.
+def facility_points(n: int, rng: np.random.Generator, per_district: int = 50) -> tuple[np.ndarray, np.ndarray]:
+    """n facilities spread over a country of districts, clustered around a few towns per district.
 
-    Cells are 0.8 degrees, shrinking for large counts so the map stays within about 18 degrees.
-    Without corners, each org unit is a point near its cell centre (a facility). With corners, it is
-    an irregular area with a jagged border of that many points (a district); see jagged_areas.
+    The districts are jagged_areas, one per `per_district` facilities, and each facility lies inside
+    its own district, so the `parent` column matches the map. Returns the points and their district.
+    """
+    district_count = max(1, int(np.ceil(n / per_district)))
+    _, districts = jagged_areas(district_count, 64, rng)
+    district = np.arange(n) // per_district
+    bounds = shapely.bounds(districts)
+    x = np.empty(n)
+    y = np.empty(n)
+    for d in range(district_count):
+        members = np.flatnonzero(district == d)
+        min_x, min_y, max_x, max_y = bounds[d]
+        spread = 0.15 * min(max_x - min_x, max_y - min_y)
+        towns = _inside(districts[d], 3, bounds[d], rng)
+        town = towns[rng.integers(0, len(towns), len(members))]
+        points = town + rng.normal(0, spread, (len(members), 2))
+        outside = ~shapely.contains_xy(districts[d], points[:, 0], points[:, 1])
+        points[outside] = _inside(districts[d], int(outside.sum()), bounds[d], rng)  # the far strays, anywhere inside
+        x[members], y[members] = points[:, 0], points[:, 1]
+    return np.stack([x, y], axis=1), district
+
+
+def _inside(polygon: Any, count: int, bounds: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """count random points inside polygon, by drawing in its bounding box and keeping those inside."""
+    found = np.empty((0, 2))
+    while len(found) < count:
+        draw = rng.uniform(bounds[:2], bounds[2:], (max(8, 2 * (count - len(found))), 2))
+        found = np.concatenate([found, draw[shapely.contains_xy(polygon, draw[:, 0], draw[:, 1])]])
+    return found[:count]
+
+
+def locations(ids: np.ndarray, corners: int | None, seed: int) -> gpd.GeoDataFrame:
+    """Org units near Nairobi on a country-like map, about 0.8 degrees apart (as chapkit's generator).
+
+    With corners, each org unit is an area with a jagged border of that many points (a district; see
+    jagged_areas). Without, it is a facility point, clustered around towns inside districts of 50
+    (see facility_points). Either way the parent column holds one parent id per 50 org units.
     """
     rng = np.random.default_rng(seed)
     n = len(ids)
+    geometry: Any
     if corners:
         _, geometry = jagged_areas(n, corners, rng)
     else:
-        side = int(np.ceil(np.sqrt(n)))
-        cell = min(0.8, 18 / side)
-        origin_lon, origin_lat = 36.8 - side * cell / 2, -1.3 - side * cell / 2
-        x = origin_lon + (np.arange(n) % side + 0.5 + rng.uniform(-0.05, 0.05, n)) * cell
-        y = origin_lat + (np.arange(n) // side + 0.5 + rng.uniform(-0.05, 0.05, n)) * cell
-        geometry = shapely.points(x, y)
-    parents = org_unit_ids(max(1, n // 50), seed + 1)
+        points, _ = facility_points(n, rng)
+        geometry = shapely.points(points)
+    parents = org_unit_ids(max(1, int(np.ceil(n / 50))), seed + 1)
     return gpd.GeoDataFrame(
         {
             "location": ids,
             "name": [f"Org unit {i + 1}" for i in range(n)],
-            "parent": parents[np.arange(n) // 50 % len(parents)],
+            "parent": parents[np.arange(n) // 50],
             "level": 3 if corners else 5,
         },
         geometry=geometry,

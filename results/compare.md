@@ -120,3 +120,18 @@
 | 05-facility-points-2000 | parquet | 5.11 MB | 1.0x | 200 | 1.30 s | 1.0x |  | 2000 |
 | 05-facility-points-2000 | json-columns | 41.86 MB | 8.2x | 200 | 1.87 s | 1.4x |  | 2000 |
 | 05-facility-points-2000 | json-rows | 282.03 MB | 55.1x | 200 | 20.66 s | 15.9x |  | 2000 |
+
+### 2026-11-26, slow links (slow-link.sh, tc netem), 03-facility-points, dry run
+
+| Link | Via | Parquet (3.8 MB) | JSON columns (31.4 MB) |
+| --- | --- | --- | --- |
+| same machine | direct | 0.97 s | 1.27 s |
+| same machine | DHIS2 2.43 | 1.15 s | 1.43 s |
+| 50 Mbit/s, 20 ms | direct | 1.73 s | 6.62 s |
+| 50 Mbit/s, 20 ms | DHIS2 2.43 | 1.85 s | 6.69 s |
+| 20 Mbit/s, 50 ms | direct | 3.05 s | 14.71 s |
+| 20 Mbit/s, 50 ms | DHIS2 2.43 | 3.06 s | 14.71 s |
+| 10 Mbit/s, 100 ms | direct | 4.84 s | 28.13 s |
+| 10 Mbit/s, 100 ms | DHIS2 2.43 | 4.98 s | 28.09 s |
+| 2 Mbit/s, 300 ms | direct | 18.74 s | 134.25 s |
+| 2 Mbit/s, 300 ms | DHIS2 2.43 | 18.87 s | 134.12 s |

@@ -1,0 +1,50 @@
+site_name: chap-test-data
+site_description: Generate Chap test datasets of any size and upload, check and compare them against Chap
+site_url: https://dhis2-chap.github.io/chap-test-data/
+repo_url: https://github.com/dhis2-chap/chap-test-data
+repo_name: dhis2-chap/chap-test-data
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Generating datasets: generating.md
+  - Uploading and checking: uploading.md
+  - Comparing with JSON: comparing.md
+  - Timing the checks: checks.md
+  - About: about.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences

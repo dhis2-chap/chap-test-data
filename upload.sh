@@ -2,10 +2,12 @@
 # Upload one dataset folder to Chap's POST /v1/crud/datasets/files with plain curl, directly or
 # through a DHIS2 route. The same as `chap-test-data upload`, for machines without Python.
 #
-# Usage: ./upload.sh [--dhis2] [--dry-run] datasets/<name>
+# Usage: ./upload.sh [--dhis2] [--dry-run] [--json] datasets/<name>
 #
 #   --dhis2    go through the DHIS2 route ($DHIS2_URL/api/routes/$ROUTE_CODE/run/...)
 #   --dry-run  validate only (dryRun=true); nothing is imported
+#   --json     send the folder's make-dataset.columns.json to make-dataset instead, as the Modeling
+#              App does today (generate the dataset with --format json-columns)
 #
 # Settings (environment):
 #   CHAP_URL        Chap API, used without --dhis2         (default http://localhost:8000)
@@ -24,10 +26,12 @@ ROUTE_CODE=${ROUTE_CODE:-chap}
 
 via=direct
 query=""
+json=false
 while [[ $# -gt 0 && $1 == --* ]]; do
   case $1 in
     --dhis2) via=dhis2 ;;
     --dry-run) query="?dryRun=true" ;;
+    --json) json=true ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
@@ -39,12 +43,20 @@ locations=$dir/locations.parquet
 [[ -f $locations ]] || locations=$dir/locations.geojson
 [[ -f $observations && -f $locations ]] || { echo "$dir needs observations.parquet and locations.parquet or .geojson" >&2; exit 2; }
 
+path=v1/crud/datasets/files
+body=(-F "observations=@$observations" -F "locations=@$locations")
+if [[ $json == true ]]; then
+  [[ -f $dir/make-dataset.columns.json ]] || { echo "$dir has no make-dataset.columns.json" >&2; exit 2; }
+  path=v1/analytics/make-dataset
+  body=(-H "Content-Type: application/json" --data-binary "@$dir/make-dataset.columns.json")
+fi
+
 auth=()
 if [[ $via == dhis2 ]]; then
-  url="$DHIS2_URL/api/routes/$ROUTE_CODE/run/v1/crud/datasets/files$query"
+  url="$DHIS2_URL/api/routes/$ROUTE_CODE/run/$path$query"
   auth=(-u "$DHIS2_USER:$DHIS2_PASSWORD")
 else
-  url="$CHAP_URL/v1/crud/datasets/files$query"
+  url="$CHAP_URL/$path$query"
   [[ -n ${CHAP_API_TOKEN:-} ]] && auth=(-H "Authorization: Bearer $CHAP_API_TOKEN")
 fi
 
@@ -53,7 +65,5 @@ if [[ -n ${BANDWIDTH:-} ]]; then
   limit=(--limit-rate "$(awk -v m="$BANDWIDTH" 'BEGIN { printf "%d", m * 125000 }')")  # Mbit/s to bytes/s
 fi
 
-curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" \
-  -F "observations=@$observations" \
-  -F "locations=@$locations" \
+curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}" \
   -w $'\nHTTP %{http_code} in %{time_total}s\n'

@@ -55,3 +55,7 @@ jobs:
         run: uv python install 3.13
       - name: Build the package
         run: uv build
+      - name: Install the project
+        run: uv sync --dev
+      - name: Build the docs
+        run: make docs
