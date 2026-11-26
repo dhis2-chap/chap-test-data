@@ -5,7 +5,7 @@ description = "Generate Chap test datasets (Parquet, CSV, GeoJSON, make-dataset 
 readme = "README.md"
 license = { text = "AGPLv3 license" }
 authors = [
-    { name = "Morten Hansen", email = "morten@winterop.com" }
+    { name = "Morten Hansen", email = "morten@dhis2.org" }
 ]
 requires-python = ">=3.13"
 dependencies = [
