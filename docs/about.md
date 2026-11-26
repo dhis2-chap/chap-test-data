@@ -9,7 +9,7 @@ far those forecasts can be trusted.
 
 Chap is moving from datasets sent as JSON and stored one value per database row to datasets sent
 and kept as Parquet files. Testing that needs data in every size, from a handful of districts to
-100,000 org units over ten years, and in every shape Chap must accept, accept in part or refuse.
+100,000 locations over ten years, and in every shape Chap must accept, accept in part or refuse.
 Real DHIS2 data cannot be shared freely and does not come in every size, so this tool makes it
 up: close enough to real data to behave like it, with the answer Chap should give known in
 advance.

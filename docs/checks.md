@@ -9,14 +9,14 @@ it, straight on the files and without Chap, and says how long each took and what
 
 | Check | What it looks for |
 | --- | --- |
-| duplicate (location, time_period) | An org unit with more than one row for the same period |
-| periods per org unit, first and last | How many periods each org unit has, and its first and last |
-| org units with a covariate gap | Org units missing a value in a covariate |
-| org units missing from locations | Org units with data but no location |
+| duplicate (location, time_period) | A location with more than one row for the same period |
+| periods per location, first and last | How many periods each location has, and its first and last |
+| locations with a covariate gap | Locations missing a value in a covariate |
+| locations missing from locations | Locations with data but no location |
 
 ```bash
 uv run chap-test-data time-checks \
-  datasets/21-facilities-20k-weekly-10y datasets/23-org-units-100k-weekly-10y
+  datasets/21-facilities-20k-weekly-10y datasets/23-locations-100k-weekly-10y
 ```
 
 | Option | What it does |
@@ -32,7 +32,7 @@ Results on a laptop with 12 cores:
 | Dataset | All checks | Memory used at most |
 | --- | --- | --- |
 | 20,000 facilities, 10 years weekly: 10.4 million rows | 0.2 s | about 0.9 GB |
-| 100,000 org units, 10 years weekly: 52.2 million rows | 3.7 s | about 1.6 GB |
+| 100,000 locations, 10 years weekly: 52.2 million rows | 3.7 s | about 1.6 GB |
 
 Nearly all of the time goes to looking for duplicates. Even the largest dataset is checked in a
 few seconds, well within the time a DHIS2 route waits for an answer.

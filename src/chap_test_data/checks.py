@@ -38,12 +38,12 @@ def run_checks(directory: Path, memory_limit: str = "1GB") -> tuple[int, list[Ch
     checks = {
         "row count (footer)": "SELECT count(*) FROM obs",
         "duplicate (location, time_period)": "SELECT location, time_period FROM obs GROUP BY ALL HAVING count(*) > 1",
-        "periods per org unit, first and last": (
+        "periods per location, first and last": (
             "SELECT location, count(*), min(time_period), max(time_period) FROM obs GROUP BY location"
         ),
         # Column names come from the file's own schema and are quoted above.
-        "org units with a covariate gap": f"SELECT location FROM obs GROUP BY location HAVING bool_or({any_gap})",  # noqa: S608
-        "org units missing from locations": (
+        "locations with a covariate gap": f"SELECT location FROM obs GROUP BY location HAVING bool_or({any_gap})",  # noqa: S608
+        "locations missing from locations": (
             "SELECT DISTINCT o.location FROM obs o ANTI JOIN (SELECT location FROM locs) l USING (location)"
         ),
     }

@@ -3,13 +3,13 @@
 `chap-test-data generate NAME` writes one dataset of any size and shape:
 
 ```bash
-uv run chap-test-data generate my-test --org-units 5000 \
+uv run chap-test-data generate my-test --locations 5000 \
   --years 5 --period monthly
-uv run chap-test-data generate districts --org-units 300 \
+uv run chap-test-data generate districts --locations 300 \
   --geometry polygon --format geojson
 uv run chap-test-data generate malaria --column malaria_cases \
   --column population --column precipitation
-uv run chap-test-data generate gaps --org-units 50 \
+uv run chap-test-data generate gaps --locations 50 \
   --covariate-gaps 5 --drop-locations 2
 uv run chap-test-data generate --help
 ```
@@ -24,7 +24,7 @@ For a ready-made set to start from, see [Ready-made datasets](ready-made.md).
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `--org-units N` | 100 | How many org units (districts or facilities) the dataset has. |
+| `--locations N` | 100 | How many locations (districts or facilities) the dataset has. |
 | `--period weekly` or `--period monthly` | weekly | How often there is a value: once a week (periods like `2016W01`) or once a month (`201601`). |
 | `--years N` | 10 | How many years of data, starting in `--start-year`. |
 | `--periods N` | | How many weeks or months exactly, instead of `--years`. `--periods 36 --period monthly` is 3 years. |
@@ -36,14 +36,14 @@ For a ready-made set to start from, see [Ready-made datasets](ready-made.md).
 | --- | --- | --- |
 | `--columns N` | 10 | How many value columns, taken in this order: disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation. Above 10 you get covariate_11, covariate_12 and so on. |
 | `--column NAME` | | Name the value columns yourself, one `--column` per column, in order. The first is the target (what models predict). Names from the list above get realistic values; other names get a seasonal covariate between 0 and 100. Replaces `--columns`. |
-| `--missing SHARE` | 0.002 | Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these org units are still imported (a gap in a covariate is different: see `--covariate-gaps`). The case counts are the target, the first value column. |
+| `--missing SHARE` | 0.002 | Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these locations are still imported (a gap in a covariate is different: see `--covariate-gaps`). The case counts are the target, the first value column. |
 
 ### Locations
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `--geometry point` | default | Each org unit is a point, like a health facility. |
-| `--geometry polygon` | | Each org unit is an area, like a district, with a jagged border shared with its neighbours. |
+| `--geometry point` | default | Each location is a point, like a health facility. |
+| `--geometry polygon` | | Each location is an area, like a district, with a jagged border shared with its neighbours. |
 | `--corners N` | 800 | How many points each area's border has, with `--geometry polygon`. More points draw a more detailed border and make the file larger. |
 | `--districts-per-region N` | 10 | About how many districts make up a region (level 2) in `hierarchy.geojson`. Regions group neighbouring districts, so their sizes vary around this: with 1,000 districts you get 100 regions of 5 to 17 districts. |
 | `--facilities-per-district N` | 50 | How many facilities a district (level 3) has on average, with `--geometry point`. Districts differ, as real ones do: with 1,500 facilities you get 30 districts of 21 to 134 facilities. |
@@ -67,15 +67,15 @@ settings.
 | `--spec-version VERSION` | 1 | The file format version written to the file. Chap only reads version 1, so anything else is refused. |
 | `--about TEXT` | | A description stored in `expected.json`. Without it, one is made from the settings. |
 
-### Org units Chap must reject
+### Locations Chap must reject
 
-Chap accepts the dataset but leaves these org units out, and says which and why.
+Chap accepts the dataset but leaves these locations out, and says which and why.
 `expected.json` counts them as rejected.
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `--covariate-gaps N` | 0 | The first N org units each miss one value in the last value column. Chap rejects an org unit with a gap in a covariate. |
-| `--drop-locations N` | 0 | The last N org units have data but no location in the locations file. Chap rejects an org unit it cannot place on the map. |
+| `--covariate-gaps N` | 0 | The first N locations each miss one value in the last value column. Chap rejects a location with a gap in a covariate. |
+| `--drop-locations N` | 0 | The last N locations have data but are left out of the locations file. Chap rejects a location it cannot place on the map. |
 
 ### Files Chap must refuse
 
@@ -83,7 +83,7 @@ Chap refuses the whole upload with an error (HTTP 422). `expected.json` holds th
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `--duplicate-rows N` | 0 | The first N rows are written twice, so an org unit has two values for the same period. |
+| `--duplicate-rows N` | 0 | The first N rows are written twice, so a location has two values for the same period. |
 | `--text-column NAME` | | Adds a column with this name holding text instead of numbers. |
 | `--drop-time-period` | | Leaves out the `time_period` column, so Chap cannot tell when the values are from. |
 | `--not-parquet` | | Writes a CSV file named `observations.parquet`, as a wrongly saved file would be. |
@@ -95,7 +95,7 @@ Chap refuses the whole upload with an error (HTTP 422). `expected.json` holds th
 | `--seed N` | random | The same seed and options always give the same files. Without it a random seed is used, and `expected.json` records it, so you can make the same dataset again. |
 | `--out FOLDER` | `datasets` | The folder the dataset folder is written in. |
 
-The observations are written in batches of org units, so memory stays small: 52 million rows
+The observations are written in batches of locations, so memory stays small: 52 million rows
 take about 25 s and 650 MB. The other formats are converted from the Parquet files in batches
 too.
 
@@ -103,7 +103,7 @@ too.
 
 | `--format` | Files |
 | --- | --- |
-| (always) | `observations.parquet`, `locations.parquet`, and `hierarchy.geojson`: the country, regions and districts above the org units |
+| (always) | `observations.parquet`, `locations.parquet`, and `hierarchy.geojson`: the country, regions and districts above the locations |
 | `geojson` | `locations.geojson` |
 | `csv` | `observations.csv` (time_period, location, then the values) and `locations.geojson` |
 | `json-columns` | `make-dataset.columns.json`: the `make-dataset` body with `providedDataColumns`, as the Modeling App sends today |
@@ -117,13 +117,13 @@ ranges:
 | Column | Values |
 | --- | --- |
 | population | A yearly estimate, the same for every week or month of a year: 50,000 to 1.5 million in the first year, growing 2 to 3% a year |
-| rainfall | 150 +/- 130 mm per period, following each org unit's own season |
+| rainfall | 150 +/- 130 mm per period, following each location's own season |
 | mean_temperature | 24 +/- 7 °C on a regional cycle; min and max 4 to 8 °C below and above |
-| disease_cases | a per-org-unit level that follows the season, plus 0.06 x rainfall |
+| disease_cases | a per-location level that follows the season, plus 0.06 x rainfall |
 | other covariates | seasonal, between 0 and 100 |
 
 The schema is Chap's, not chapkit's: periods as Chap stores them (`2016W01`, `201601`, with real
-ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.
+ISO weeks, so some years have a week 53) and DHIS2-style location ids.
 
 ## The map
 
@@ -139,17 +139,17 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.
 
 ## The hierarchy
 
-As in DHIS2, the org units sit in a tree of areas, written to `hierarchy.geojson`:
+As in DHIS2, the locations sit in a tree of areas, written to `hierarchy.geojson`:
 
 | Level | Area | With `--geometry polygon` | With `--geometry point` |
 | --- | --- | --- | --- |
 | 1 | Country | in `hierarchy.geojson` | in `hierarchy.geojson` |
 | 2 | Regions, about 10 districts each (`--districts-per-region`) | in `hierarchy.geojson` | in `hierarchy.geojson` |
-| 3 | Districts | the org units, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each (`--facilities-per-district`) |
-| 4 | Facilities | | the org units, in `locations.*` |
+| 3 | Districts | the locations, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each (`--facilities-per-district`) |
+| 4 | Facilities | | the locations, in `locations.*` |
 
-Every area and org unit has a `level`, and a `parent`: the id of the area one level up that it
+Every area and location has a `level`, and a `parent`: the id of the area one level up that it
 lies inside. The country has no parent. The areas of each level tile the whole country, and each
 region is a single piece. Open `hierarchy.geojson` with `locations.geojson` in a map tool to see
-the org units inside their districts and regions.
+the locations inside their districts and regions.
 

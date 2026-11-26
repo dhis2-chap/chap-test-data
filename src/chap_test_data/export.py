@@ -40,7 +40,7 @@ def chap_metadata(observations: Path) -> tuple[dict, dict]:
 
 
 def geojson_text(directory: Path) -> str:
-    """The locations as a GeoJSON FeatureCollection, with the org unit id as each feature's id."""
+    """The locations as a GeoJSON FeatureCollection, with the location id as each feature's id."""
     if (directory / "locations.geojson").exists():
         return (directory / "locations.geojson").read_text()
     frame = gpd.read_parquet(directory / "locations.parquet").set_index("location")

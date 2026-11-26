@@ -3,7 +3,7 @@
 Made-up datasets for [Chap](https://chap.dhis2.org), in any size, and the tools to send them to
 Chap and check its answers.
 
-- **Generate** datasets from 10 to 100,000 org units over any number of years, weekly or
+- **Generate** datasets from 10 to 100,000 locations over any number of years, weekly or
   monthly, with case counts, covariates and climate data.
 - **Know the answer in advance.** Each dataset comes with an `expected.json` saying what Chap
   should answer, including for the files it must refuse.
@@ -24,7 +24,7 @@ git clone https://github.com/dhis2-chap/chap-test-data && cd chap-test-data
 uv sync
 # 16 ready-made datasets in datasets/
 scripts/generate-ready-made.sh --standard-only
-uv run chap-test-data generate my-country --org-units 300 \
+uv run chap-test-data generate my-country --locations 300 \
   --geometry polygon --format geojson
 # needs a running Chap; see Getting started
 uv run chap-test-data check
@@ -34,7 +34,7 @@ uv run chap-test-data check
 
 | Word | Meaning |
 | --- | --- |
-| org unit | A place data is reported for, as DHIS2 calls it: a district, or a health facility. |
+| location | A place data is reported for, such as a district or a health facility. In DHIS2, an organisation unit (org unit). |
 | target | The value a model predicts: the case counts, `disease_cases` unless you name the columns yourself. |
 | covariate | Any other value column a model can use, such as rainfall or temperature. |
 | period | One week (`2016W01`) or one month (`201601`) of data. |
@@ -48,10 +48,10 @@ Every dataset is a folder, named after the dataset, holding the same data in sev
 
 | File | What it holds |
 | --- | --- |
-| `observations.parquet` | One row per org unit and period: `location` (the org unit's id), `time_period`, then one number column per value. The dataset's settings, such as its name, are stored inside the file. |
-| `locations.parquet` | One row per org unit: its id, `name`, `parent` (the area it lies in), `level` (3 for districts, 4 for facilities) and its point or shape on the map. |
+| `observations.parquet` | One row per location and period: `location` (the location's id), `time_period`, then one number column per value. The dataset's settings, such as its name, are stored inside the file. |
+| `locations.parquet` | One row per location: its id, `name`, `parent` (the area it lies in), `level` (3 for districts, 4 for facilities) and its point or shape on the map. |
 | `locations.geojson` | The same locations as GeoJSON, which most map tools open. |
-| `hierarchy.geojson` | The areas above the org units, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a `parent` one level up. |
+| `hierarchy.geojson` | The areas above the locations, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a `parent` one level up. |
 | `make-dataset.columns.json` | The same dataset as the JSON the Modeling App sends today. |
 | `expected.json` | What Chap should answer to a dry run of the Parquet files, and the seed the dataset was made with. |
 

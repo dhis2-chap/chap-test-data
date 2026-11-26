@@ -32,10 +32,10 @@ plugins:
   - llmstxt:
       markdown_description: >
         chap-test-data makes up datasets for Chap, the DHIS2 climate and health modelling platform,
-        in any size (10 to 100,000 org units, weekly or monthly, over any number of years), and
+        in any size (10 to 100,000 locations, weekly or monthly, over any number of years), and
         sends them to Chap to check its answers. Install with `uv sync`, then use the
         `chap-test-data` command: `generate NAME` writes one dataset folder (Parquet observations,
-        GeoParquet locations, GeoJSON org unit hierarchy, an expected.json with the answer Chap
+        GeoParquet locations, GeoJSON location hierarchy, an expected.json with the answer Chap
         should give); `upload FOLDER` and `check` send datasets to a running Chap, straight or
         through a DHIS2 route; `compare` measures Parquet against the JSON the Modeling App sends
         today. `scripts/generate-ready-made.sh` writes a fixed set of datasets, the same every time.
@@ -47,7 +47,7 @@ plugins:
           - getting-started.md: "Install, start Chap and DHIS2, connection settings"
         Datasets:
           - ready-made.md: "The fixed set of test datasets and the answer Chap should give for each"
-          - generating.md: "Every option of `chap-test-data generate`, the formats, the values and the org unit hierarchy"
+          - generating.md: "Every option of `chap-test-data generate`, the formats, the values and the location hierarchy"
         Using them with Chap:
           - uploading.md: "`upload`, `check`, and the same with curl"
           - comparing.md: "`compare`, and uploads over a slow link"

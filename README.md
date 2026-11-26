@@ -8,7 +8,7 @@
 Synthetic datasets for [Chap](https://chap.dhis2.org), at any size, and the tools to send them to
 Chap and check its answers.
 
-- **Generate** datasets from 10 to 100,000 org units over any number of years, weekly or monthly,
+- **Generate** datasets from 10 to 100,000 locations over any number of years, weekly or monthly,
   as Parquet and GeoParquet, and as CSV, GeoJSON and the `make-dataset` JSON bodies.
 - **Know the answer in advance:** each dataset has an `expected.json` with what Chap should answer.
 - **Upload and check** against a running Chap, directly or through a DHIS2 route, with Python or
@@ -25,7 +25,7 @@ each page as Markdown; [llms-full.txt](https://dhis2-chap.github.io/chap-test-da
 ```bash
 uv sync
 scripts/generate-ready-made.sh --standard-only        # 16 datasets in datasets/, the same every time
-uv run chap-test-data generate my-country --org-units 300 --geometry polygon --format geojson
+uv run chap-test-data generate my-country --locations 300 --geometry polygon --format geojson
 uv run chap-test-data --help
 ```
 

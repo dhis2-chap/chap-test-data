@@ -33,7 +33,7 @@ COLUMNS = "Value columns"
 LOCATIONS = "Locations"
 FORMATS = "Other formats"
 SETTINGS = "Settings in the file"
-REJECTED = "Org units Chap must reject"
+REJECTED = "Locations Chap must reject"
 REFUSED = "Files Chap must refuse"
 REPRODUCE = "Reproducing a dataset"
 
@@ -129,8 +129,8 @@ def target(dhis2: bool, bandwidth: float | None = None) -> Target:
 @app.command()
 def generate(
     name: Annotated[str, typer.Argument(help="The dataset's name: the folder it is written to, under --out.")],
-    org_units: Annotated[
-        int, typer.Option(help="How many org units (districts or facilities).", rich_help_panel=SIZE)
+    location_count: Annotated[
+        int, typer.Option("--locations", help="How many locations (districts or facilities).", rich_help_panel=SIZE)
     ] = 100,
     period: Annotated[
         Period,
@@ -170,14 +170,14 @@ def generate(
         float,
         typer.Option(
             help="Leave some case counts (the target) empty at random, as weeks with no report would be. A "
-            "fraction: 0.002 is about 1 value in 500, 0 is none. Chap still imports these org units.",
+            "fraction: 0.002 is about 1 value in 500, 0 is none. Chap still imports these locations.",
             rich_help_panel=COLUMNS,
         ),
     ] = 0.002,
     geometry: Annotated[
         Geometry,
         typer.Option(
-            help="point: each org unit is a point, like a health facility. polygon: each is an area, like a "
+            help="point: each location is a point, like a health facility. polygon: each is an area, like a "
             "district, with a jagged border shared with its neighbours.",
             rich_help_panel=LOCATIONS,
         ),
@@ -254,21 +254,21 @@ def generate(
     covariate_gaps: Annotated[
         int,
         typer.Option(
-            help="The first N org units each miss one value in the last value column. Chap rejects those org units.",
+            help="The first N locations each miss one value in the last value column. Chap rejects those locations.",
             rich_help_panel=REJECTED,
         ),
     ] = 0,
     drop_locations: Annotated[
         int,
         typer.Option(
-            help="The last N org units have data but no location in the locations file. Chap rejects them.",
+            help="The last N locations have data but are left out of the locations file. Chap rejects them.",
             rich_help_panel=REJECTED,
         ),
     ] = 0,
     duplicate_rows: Annotated[
         int,
         typer.Option(
-            help="The first N rows are written twice, so an org unit has two values for one period. Chap refuses "
+            help="The first N rows are written twice, so a location has two values for one period. Chap refuses "
             "the upload.",
             rich_help_panel=REFUSED,
         ),
@@ -311,7 +311,7 @@ def generate(
 ) -> None:
     """Write a synthetic dataset of any size, with the answer Chap should give in expected.json.
 
-    The observations are written in batches of org units, so memory stays small even for tens of
+    The observations are written in batches of locations, so memory stays small even for tens of
     millions of rows.
     """
     ranges = []
@@ -322,7 +322,7 @@ def generate(
         ranges.append((start, end))
     spec = DatasetSpec(
         name=name,
-        org_units=org_units,
+        location_count=location_count,
         years=years,
         periods=periods,
         period=period.value,
@@ -354,7 +354,7 @@ def generate(
     def progress(done: int, total: int) -> None:
         """A counter on the terminal while large datasets are written, erased when done."""
         if show_progress and total > 1_000:
-            line = f"{done:,} of {total:,} org units" if done < total else ""
+            line = f"{done:,} of {total:,} locations" if done < total else ""
             typer.echo(f"\r\033[K{line}", nl=False, err=True)
 
     extra = [f.value for f in formats or [] if f is not Format.parquet]
@@ -484,7 +484,7 @@ def compare(
 @app.command("time-checks")
 def time_checks(
     datasets: Annotated[
-        list[Path], typer.Argument(help="The dataset folders to time, such as datasets/23-org-units-100k-weekly-10y.")
+        list[Path], typer.Argument(help="The dataset folders to time, such as datasets/23-locations-100k-weekly-10y.")
     ],
     memory_limit: Annotated[
         str, typer.Option(help="The most memory the checks may use, such as 1GB; beyond it they use the disk instead.")

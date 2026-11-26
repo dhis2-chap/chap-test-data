@@ -16,7 +16,8 @@ runner = CliRunner()
 def dataset(tmp_path: Path) -> Path:
     directory = tmp_path / "small"
     build(
-        DatasetSpec(name="small", org_units=3, periods=4, period="monthly", columns=3, seed=1, missing=0.2), directory
+        DatasetSpec(name="small", location_count=3, periods=4, period="monthly", columns=3, seed=1, missing=0.2),
+        directory,
     )
     return directory
 
@@ -55,7 +56,7 @@ def test_csv_puts_time_period_first_and_writes_geojson(tmp_path):
 def test_generate_command_writes_the_folder_and_the_formats(tmp_path):
     result = runner.invoke(
         app,
-        ["generate", "cli", "--org-units", "2", "--periods", "3", "--seed", "42", "--out", str(tmp_path)]
+        ["generate", "cli", "--locations", "2", "--periods", "3", "--seed", "42", "--out", str(tmp_path)]
         + ["--format", "csv", "--format", "json-columns"],
     )
     assert result.exit_code == 0, result.output

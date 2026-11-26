@@ -50,7 +50,7 @@ def detail_text(answer: Answer) -> str:
 
 
 def show_answer(directory: Path, answer: Answer, dry_run: bool, raw: bool) -> None:
-    """Chap's answer to an upload, in words, with a table of any rejected org units."""
+    """Chap's answer to an upload, in words, with a table of any rejected locations."""
     if raw:
         console.print_json(data=answer.body) if not isinstance(answer.body, str) else console.print(answer.body)
     sent = f"  [dim]HTTP {answer.http} in {answer.seconds:.2f} s, {answer.bytes / 1e6:,.2f} MB sent[/]"
@@ -62,12 +62,12 @@ def show_answer(directory: Path, answer: Answer, dry_run: bool, raw: bool) -> No
     rejected = body.get("rejected", [])
     verb = "would import" if dry_run else "is importing"
     console.print(
-        f"[bold green]Chap {verb} {body.get('importedCount', 0):,} org units[/] from {directory.name}"
+        f"[bold green]Chap {verb} {body.get('importedCount', 0):,} locations[/] from {directory.name}"
         f"{f', and rejects {len(rejected)}' if rejected else ''}"
     )
     console.print(sent)
     if rejected:
-        table = Table("Org unit", "Value", "Periods", "Why it was rejected", show_lines=False)
+        table = Table("Location", "Value", "Periods", "Why it was rejected", show_lines=False)
         for row in rejected[:25]:
             periods = row.get("timePeriods") or []
             table.add_row(

@@ -1,4 +1,4 @@
-"""Synthetic datasets of any size, written in batches of org units so memory stays small.
+"""Synthetic datasets of any size, written in batches of locations so memory stays small.
 
 Options also make the files Chap must reject or partly reject, and expected.json records the
 answer Chap's Phase 1 endpoint should give.
@@ -53,7 +53,7 @@ class DatasetSpec(BaseModel):
     """Everything that decides what a generated dataset looks like."""
 
     name: str
-    org_units: int = 100
+    location_count: int = 100
     years: int = 10
     periods: int | None = None
     period: str = "weekly"
@@ -81,7 +81,7 @@ class DatasetSpec(BaseModel):
     geojson: bool = False
 
 
-def org_unit_ids(n: int, seed: int) -> np.ndarray:
+def location_ids(n: int, seed: int) -> np.ndarray:
     """n unique DHIS2-style ids (11 characters, starting with a letter), sorted."""
     rng = np.random.default_rng(seed)
     letters = np.array(list(string.ascii_letters))
@@ -116,10 +116,10 @@ def column_names(spec: DatasetSpec) -> list[str]:
 def batch(
     ids: np.ndarray, periods: list[str], per_year: int, names: list[str], missing: float, rng: np.random.Generator
 ) -> pa.Table:
-    """Rows for a batch of org units, sorted by location then time_period.
+    """Rows for a batch of locations, sorted by location then time_period.
 
     The values follow chapkit's TestDataGenerator (chapkit/data/generator.py), so models tested with
-    either tool see the same kind of data: each org unit has its own seasonal phase, rainfall follows
+    either tool see the same kind of data: each location has its own seasonal phase, rainfall follows
     that season, temperature follows one regional cycle, and cases follow the season and rainfall.
     """
     n_ou, n_p = len(ids), len(periods)
@@ -132,7 +132,7 @@ def batch(
     def noise(half_width: float) -> np.ndarray:
         return rng.uniform(-half_width, half_width, n)
 
-    season = np.sin(2 * np.pi * (year_fraction - per_ou(0, 1)))  # in [-1, 1], peaking at each org unit's own time
+    season = np.sin(2 * np.pi * (year_fraction - per_ou(0, 1)))  # in [-1, 1], peaking at each location's own time
     rainfall = np.maximum(0.0, 150 + 130 * season + noise(25))  # mm per period
     temperature = 24 + 7 * np.sin(2 * np.pi * (year_fraction - 0.08)) + noise(1.5)  # degC, regional cycle
 
@@ -189,7 +189,7 @@ def batch(
 def with_faults(table: pa.Table, spec: DatasetSpec, n_periods: int, first: bool) -> pa.Table:
     """Apply the faults the spec asks for; gaps and duplicates go into the first batch only."""
     if first and spec.covariate_gaps:
-        # One missing value of the last covariate in each of the first org units: Chap rejects those org units.
+        # One missing value of the last covariate in each of the first locations: Chap rejects those locations.
         name = table.column_names[-1]
         values = table.column(name).to_numpy(zero_copy_only=False).copy()
         values[[i * n_periods + min(5, n_periods - 1) for i in range(spec.covariate_gaps)]] = np.nan
@@ -416,15 +416,15 @@ def locations(
     districts_per_region: int = 10,
     facilities_per_district: int = 50,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Org units near Nairobi on a country-like map, about 0.8 degrees apart (as chapkit's generator).
+    """Locations near Nairobi on a country-like map, about 0.8 degrees apart (as chapkit's generator).
 
-    With corners, each org unit is a district (level 3): an area with a jagged border of that many
+    With corners, each location is a district (level 3): an area with a jagged border of that many
     points (see jagged_areas). Without, each is a facility (level 4), a point clustered around towns
     inside districts of about `facilities_per_district` facilities (see facility_points). Above them, as
     in DHIS2, regions (level 2) group about `districts_per_region` neighbouring districts (see regions)
     and the country (level 1) holds them all.
 
-    Returns the org units, each with the id of the area it lies in as `parent`, and the hierarchy
+    Returns the locations, each with the id of the area it lies in as `parent`, and the hierarchy
     above them: every area with its `name`, `level` and `parent`, from the country down.
     """
     rng = np.random.default_rng(seed)
@@ -446,7 +446,7 @@ def locations(
     country = shapely.orient_polygons(country, exterior_cw=False)
 
     taken = set(ids)
-    hierarchy_ids = [i for i in org_unit_ids(len(districts) + len(region_outlines) + 8, seed + 1) if i not in taken]
+    hierarchy_ids = [i for i in location_ids(len(districts) + len(region_outlines) + 8, seed + 1) if i not in taken]
     country_id = hierarchy_ids[0]
     region_ids = np.array(hierarchy_ids[1 : 1 + len(region_outlines)])
     rows = [{"location": country_id, "name": "Country", "level": 1, "parent": None, "geometry": country}]
@@ -455,7 +455,7 @@ def locations(
         for k, g in enumerate(region_outlines)
     ]
     if corners:
-        parent_of_org_unit = region_ids[region_of]
+        parent_of_location = region_ids[region_of]
     else:
         first = 1 + len(region_outlines)
         district_ids = np.array(hierarchy_ids[first : first + len(districts)])
@@ -470,19 +470,19 @@ def locations(
             }
             for d, g in enumerate(districts)
         ]
-        parent_of_org_unit = district_ids[district_of]
-    org_units = gpd.GeoDataFrame(
+        parent_of_location = district_ids[district_of]
+    location_count = gpd.GeoDataFrame(
         {
             "location": ids,
             "name": [f"{'District' if corners else 'Facility'} {i + 1}" for i in range(n)],
-            "parent": parent_of_org_unit,
+            "parent": parent_of_location,
             "level": level,
         },
         geometry=geometry,
         crs=4326,
     )
     hierarchy = gpd.GeoDataFrame(rows, geometry="geometry", crs=4326)
-    return org_units, hierarchy
+    return location_count, hierarchy
 
 
 def expected_answer(spec: DatasetSpec, rows: int, observations: Path, locations_path: Path) -> Expected:
@@ -503,7 +503,7 @@ def expected_answer(spec: DatasetSpec, rows: int, observations: Path, locations_
     if spec.duplicate_rows:
         return Expected(http=422, detail="more than one row")
     rejected = spec.covariate_gaps + spec.drop_locations
-    return Expected(http=200, imported_count=spec.org_units - rejected, rejected=rejected)
+    return Expected(http=200, imported_count=spec.location_count - rejected, rejected=rejected)
 
 
 def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], None] | None = None) -> Expected:
@@ -517,13 +517,13 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         raise ValueError("--districts-per-region and --facilities-per-district must be at least 1")
     if spec.geometry == "polygon" and spec.corners < 3:
         raise ValueError("a polygon needs at least 3 points")
-    if spec.covariate_gaps + spec.drop_locations > spec.org_units:
-        raise ValueError("more org units rejected than there are")
+    if spec.covariate_gaps + spec.drop_locations > spec.location_count:
+        raise ValueError("more locations rejected than there are")
     shutil.rmtree(directory, ignore_errors=True)
     directory.mkdir(parents=True)
     periods, per_year = period_strings(spec)
     seed = spec.seed if spec.seed is not None else secrets.randbelow(2**31)
-    ids = org_unit_ids(spec.org_units, seed)
+    ids = location_ids(spec.location_count, seed)
     rng = np.random.default_rng(seed)
     per_batch = max(1, ROWS_PER_BATCH // len(periods))
     observations = directory / "observations.parquet"
@@ -559,7 +559,7 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         districts_per_region=spec.districts_per_region,
         facilities_per_district=spec.facilities_per_district,
     )
-    # The areas above the org units, country down, so the org unit tree can be seen and checked.
+    # The areas above the locations, country down, so the location tree can be seen and checked.
     (directory / "hierarchy.geojson").write_text(hierarchy.set_index("location").to_json(drop_id=False))
     if spec.drop_locations:
         frame = frame.iloc[: len(frame) - spec.drop_locations]
@@ -572,7 +572,7 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
 
     shape = f"jagged polygons of {spec.corners} points" if spec.geometry == "polygon" else "points"
     about = spec.about or (
-        f"{spec.org_units:,} org units x {len(periods)} {spec.period} periods "
+        f"{spec.location_count:,} locations x {len(periods)} {spec.period} periods "
         f"({periods[0]} to {periods[-1]}), {len(names)} value columns, {shape}"
     )
     expected = expected_answer(spec, rows, observations, locations_path).model_copy(

@@ -12,7 +12,7 @@ from chap_test_data.generate import DatasetSpec, build
 
 
 def generate(tmp_path: Path, **options: object) -> tuple[Path, Expected]:
-    settings = {"org_units": 6, "periods": 12, "period": "monthly", "columns": 4, "seed": 42} | options
+    settings = {"location_count": 6, "periods": 12, "period": "monthly", "columns": 4, "seed": 42} | options
     spec = DatasetSpec(name="test", **settings)
     directory = tmp_path / spec.name
     return directory, build(spec, directory)
@@ -22,7 +22,7 @@ def observations(directory: Path):
     return pq.read_table(directory / "observations.parquet").to_pandas()
 
 
-def test_a_dataset_has_one_sorted_row_per_org_unit_and_period(tmp_path):
+def test_a_dataset_has_one_sorted_row_per_location_and_period(tmp_path):
     directory, expected = generate(tmp_path)
     frame = observations(directory)
     assert len(frame) == 6 * 12 == expected.rows
@@ -61,14 +61,14 @@ def test_the_same_seed_gives_the_same_files(tmp_path):
 
 
 def test_without_a_seed_a_random_one_is_recorded(tmp_path):
-    spec = DatasetSpec(name="random", org_units=2, periods=3)
+    spec = DatasetSpec(name="random", location_count=2, periods=3)
     expected = build(spec, tmp_path / "random")
     assert expected.seed is not None
     assert Expected.read(tmp_path / "random").seed == expected.seed
 
 
 def test_values_stay_within_chapkit_ranges(tmp_path):
-    directory, _ = generate(tmp_path, columns=12, org_units=20, periods=48, missing=0)
+    directory, _ = generate(tmp_path, columns=12, location_count=20, periods=48, missing=0)
     frame = observations(directory)
     assert frame["disease_cases"].min() >= 0
     assert frame["population"].between(50_000, 1_500_000 * 1.03**3).all()
@@ -109,7 +109,7 @@ def test_named_columns_replace_the_defaults_and_the_first_is_the_target(tmp_path
 def test_polygons_tile_a_country_like_map(tmp_path):
     import shapely
 
-    directory, _ = generate(tmp_path, org_units=40, geometry="polygon")
+    directory, _ = generate(tmp_path, location_count=40, geometry="polygon")
     polygons = gpd.read_parquet(directory / "locations.parquet").geometry.to_numpy()
     assert len(polygons) == 40 and shapely.is_valid(polygons).all()
     assert set(shapely.get_type_id(polygons)) == {3}  # Polygon, one piece each
@@ -152,12 +152,12 @@ def test_faults_expect_the_upload_to_be_refused(tmp_path, options, http, detail)
         assert not (directory / "observations.parquet").read_bytes().startswith(b"PAR1")
 
 
-def test_gaps_and_missing_locations_reject_those_org_units(tmp_path):
+def test_gaps_and_missing_locations_reject_those_locations(tmp_path):
     directory, expected = generate(tmp_path, covariate_gaps=2, drop_locations=1)
     assert (expected.http, expected.imported_count, expected.rejected) == (200, 3, 3)
     found = {result.name: result.found for result in run_checks(directory)[1]}
-    assert found["org units with a covariate gap"] == 2
-    assert found["org units missing from locations"] == 1
+    assert found["locations with a covariate gap"] == 2
+    assert found["locations missing from locations"] == 1
     assert found["duplicate (location, time_period)"] == 0
 
 
@@ -188,8 +188,8 @@ def read_hierarchy(directory):
     return gpd.read_file(directory / "hierarchy.geojson").set_index("id")
 
 
-def assert_tree(org_units, hierarchy, levels):
-    """Each org unit and area lies inside the area its parent names, one level up, ending at the country."""
+def assert_tree(location_count, hierarchy, levels):
+    """Each location and area lies inside the area its parent names, one level up, ending at the country."""
     import shapely
 
     assert sorted(hierarchy["level"].unique()) == levels
@@ -199,7 +199,7 @@ def assert_tree(org_units, hierarchy, levels):
         parent = hierarchy.loc[area["parent"]]
         assert parent["level"] == area["level"] - 1
         assert parent.geometry.buffer(1e-9).contains(area.geometry)
-    for row in org_units.itertuples():
+    for row in location_count.itertuples():
         parent = hierarchy.loc[row.parent]
         assert parent["level"] == row.level - 1
         assert parent.geometry.buffer(1e-9).contains(row.geometry)
@@ -210,7 +210,7 @@ def assert_tree(org_units, hierarchy, levels):
 
 
 def test_facilities_sit_at_level_4_under_districts_regions_and_the_country(tmp_path):
-    directory, _ = generate(tmp_path, org_units=600)
+    directory, _ = generate(tmp_path, location_count=600)
     facilities = gpd.read_parquet(directory / "locations.parquet")
     hierarchy = read_hierarchy(directory)
     assert set(facilities["level"]) == {4}
@@ -219,7 +219,7 @@ def test_facilities_sit_at_level_4_under_districts_regions_and_the_country(tmp_p
 
 
 def test_districts_sit_at_level_3_under_regions_and_the_country(tmp_path):
-    directory, _ = generate(tmp_path, org_units=120, geometry="polygon", corners=64)
+    directory, _ = generate(tmp_path, location_count=120, geometry="polygon", corners=64)
     districts = gpd.read_parquet(directory / "locations.parquet")
     hierarchy = read_hierarchy(directory)
     assert set(districts["level"]) == {3}
@@ -230,16 +230,18 @@ def test_districts_sit_at_level_3_under_regions_and_the_country(tmp_path):
 def test_polygons_follow_the_geojson_right_hand_rule(tmp_path):
     import shapely
 
-    directory, _ = generate(tmp_path, org_units=60, geometry="polygon", corners=64)
+    directory, _ = generate(tmp_path, location_count=60, geometry="polygon", corners=64)
     polygons = gpd.read_parquet(directory / "locations.parquet").geometry.to_numpy()
     assert all(shapely.is_ccw(p.exterior) for p in polygons)
     assert all(shapely.is_ccw(p.exterior) for p in read_hierarchy(directory).geometry)
 
 
 def test_the_hierarchy_sizes_can_be_chosen(tmp_path):
-    directory, _ = generate(tmp_path, org_units=100, geometry="polygon", corners=16, districts_per_region=25)
+    directory, _ = generate(tmp_path, location_count=100, geometry="polygon", corners=16, districts_per_region=25)
     assert (read_hierarchy(directory)["level"] == 2).sum() == 4
-    directory, _ = generate(tmp_path / "facilities", org_units=300, facilities_per_district=100, districts_per_region=1)
+    directory, _ = generate(
+        tmp_path / "facilities", location_count=300, facilities_per_district=100, districts_per_region=1
+    )
     hierarchy = read_hierarchy(directory)
     assert (hierarchy["level"] == 3).sum() == 3 and (hierarchy["level"] == 2).sum() == 3
     assert_tree(gpd.read_parquet(directory / "locations.parquet"), hierarchy, [1, 2, 3])
