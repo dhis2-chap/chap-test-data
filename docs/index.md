@@ -14,8 +14,8 @@ Chap and check its answers.
 
 ![Generated districts and facilities](assets/locations.png)
 
-For AI agents: [llms.txt](llms.txt) says what the tool does and links to each page as Markdown;
-[llms-full.txt](llms-full.txt) is all of it in one file.
+For AI agents: [llms.txt](https://dhis2-chap.github.io/chap-test-data/llms.txt) says what the tool does and links to each page as Markdown;
+[llms-full.txt](https://dhis2-chap.github.io/chap-test-data/llms-full.txt) is all of it in one file.
 
 ## In one minute
 
