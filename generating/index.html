@@ -1031,6 +1031,16 @@ For a ready-made set to start from, see <a href="../ready-made/">Ready-made data
 <td>How many points each area's border has, with <code>--geometry polygon</code>. More points draw a more detailed border and make the file larger.</td>
 </tr>
 <tr>
+<td><code>--districts-per-region N</code></td>
+<td>10</td>
+<td>About how many districts make up a region (level 2) in <code>hierarchy.geojson</code>. Regions group neighbouring districts, so their sizes vary around this: with 1,000 districts you get 100 regions of 5 to 17 districts.</td>
+</tr>
+<tr>
+<td><code>--facilities-per-district N</code></td>
+<td>50</td>
+<td>How many facilities a district (level 3) has on average, with <code>--geometry point</code>. Districts differ, as real ones do: with 1,500 facilities you get 30 districts of 21 to 134 facilities.</td>
+</tr>
+<tr>
 <td><code>--geojson</code></td>
 <td></td>
 <td>Write the locations only as <code>locations.geojson</code>, not as <code>locations.parquet</code>. Use it to test a GeoJSON upload.</td>
@@ -1267,7 +1277,7 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
 </tr>
 <tr>
 <td>2</td>
-<td>Regions, about 10 districts each</td>
+<td>Regions, about 10 districts each (<code>--districts-per-region</code>)</td>
 <td>in <code>hierarchy.geojson</code></td>
 <td>in <code>hierarchy.geojson</code></td>
 </tr>
@@ -1275,7 +1285,7 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
 <td>3</td>
 <td>Districts</td>
 <td>the org units, in <code>locations.*</code></td>
-<td>in <code>hierarchy.geojson</code>, about 50 facilities each</td>
+<td>in <code>hierarchy.geojson</code>, about 50 facilities each (<code>--facilities-per-district</code>)</td>
 </tr>
 <tr>
 <td>4</td>
