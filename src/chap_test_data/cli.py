@@ -1,6 +1,7 @@
 """The chap-test-data command line."""
 
 import json
+import sys
 import tempfile
 from enum import StrEnum
 from pathlib import Path
@@ -329,9 +330,13 @@ def generate(
     )
     directory = out / name
 
+    show_progress = sys.stderr.isatty()
+
     def progress(done: int, total: int) -> None:
-        if total > 1_000:
-            typer.echo(f"\r{done:,} of {total:,} org units", nl=False, err=True)
+        """A counter on the terminal while large datasets are written, erased when done."""
+        if show_progress and total > 1_000:
+            line = f"{done:,} of {total:,} org units" if done < total else ""
+            typer.echo(f"\r\033[K{line}", nl=False, err=True)
 
     extra = [f.value for f in formats or [] if f is not Format.parquet]
     if extra and not_parquet:
