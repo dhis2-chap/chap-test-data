@@ -38,16 +38,22 @@ They use 4 value columns: disease_cases, population, rainfall and mean_temperatu
 
 ## Large
 
-10 years with all 10 value columns. Only the first fits what Chap's Parquet upload accepts today
-(1 million rows, 100 MB per file); the others are the sizes Chap's stored datasets are designed
-for.
+10 years with all 10 value columns. Only the first fits what Chap's Parquet upload accepts today;
+the others are the sizes Chap's stored datasets are designed for.
 
-| Dataset | Rows | Expected answer |
-| --- | --- | --- |
-| `20-phase1-max-weekly-10y` | 1,900 x 522 weeks = 991,800 | 1,900 imported |
-| `21-facilities-20k-weekly-10y` | 20,000 x 522 = 10.4 million | 413, file too large |
-| `22-org-units-100k-monthly-10y` | 100,000 x 120 = 12 million | 413, file too large |
-| `23-org-units-100k-weekly-10y` | 100,000 x 522 = 52.2 million | 413, file too large |
+| Dataset | Rows | Observations file | Expected answer |
+| --- | --- | --- | --- |
+| `20-phase1-max-weekly-10y` | 1,900 x 522 weeks = 991,800 | 15 MB | 1,900 imported |
+| `21-facilities-20k-weekly-10y` | 20,000 x 522 = 10.4 million | 161 MB | 413: over Chap's 100 MB per-file limit |
+| `22-org-units-100k-monthly-10y` | 100,000 x 120 = 12 million | 177 MB | 413: over Chap's 100 MB per-file limit |
+| `23-org-units-100k-weekly-10y` | 100,000 x 522 = 52.2 million | 753 MB | 413: over Chap's 100 MB per-file limit |
+
+The limits are Chap's own, not DHIS2's: its Parquet upload accepts up to 100 MB per file and
+1 million rows. They keep one upload from taking too much of the API's memory, because Chap
+reads the whole dataset into memory as it imports it. The file size is checked first, while the
+upload arrives, so these three get 413 (too large); under 100 MB, 10 million rows would get 422
+(too many rows) instead. A DHIS2 server may have its own size limit in front of it, such as
+nginx's `client_max_body_size`, which also answers 413.
 
 `23` gets no JSON body: it would be about 5 GB.
 
