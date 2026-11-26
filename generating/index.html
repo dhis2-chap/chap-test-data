@@ -912,7 +912,7 @@ too.</p>
 <tbody>
 <tr>
 <td>(always)</td>
-<td><code>observations.parquet</code>, <code>locations.parquet</code></td>
+<td><code>observations.parquet</code>, <code>locations.parquet</code>, and <code>parents.geojson</code>: the parent areas the org units lie in</td>
 </tr>
 <tr>
 <td><code>geojson</code></td>
@@ -976,7 +976,14 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
   circle of the same area, as real borders are (1.4 to 1.9 in those files).</li>
 <li><strong>Facilities</strong> (<code>--geometry point</code>) cluster around a few towns in each district, always inside
   it, and the <code>parent</code> column names that district: one per 50 facilities.</li>
+<li><strong>Parents</strong> are written to <code>parents.geojson</code>, so the org units can be checked against them: for
+  facilities the districts they lie in, for districts the regions of about 50 neighbours they
+  make up. Every org unit lies inside the parent its <code>parent</code> column names.</li>
+<li>Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.</li>
 </ul>
+<p>All GeoJSON files were checked in <a href="https://geojson.io">geojson.io</a> on 2026-11-26: imported, exported
+again and compared, every file kept its features, ids, properties and coordinates unchanged, and
+with the parents on the same map every org unit lay inside its own parent.</p>
 
 
 
