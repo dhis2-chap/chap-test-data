@@ -1,0 +1,32 @@
+# A local DHIS2 2.43 whose route can reach a Chap started from chap-core with
+#   docker compose -p chap-test-data up -d --build
+# DHIS2 joins that stack's default network, where Chap's API answers at http://chap:8000.
+name: chap-test-data-dhis2
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    environment:
+      POSTGRES_USER: dhis
+      POSTGRES_PASSWORD: dhis
+      POSTGRES_DB: dhis2
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dhis -d dhis2"]
+      interval: 5s
+      retries: 30
+  web:
+    image: dhis2/core:${DHIS2_TAG:-2.43.2.1}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./dhis.conf:/opt/dhis2/dhis.conf:ro
+    networks:
+      - default
+      - chap
+
+networks:
+  chap:
+    external: true
+    name: ${CHAP_NETWORK:-chap-test-data_default}
