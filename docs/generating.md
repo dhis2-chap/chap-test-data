@@ -63,12 +63,12 @@ uv run chap-test-data generate --help
 
 | Options | What they set |
 | --- | --- |
-| `--org-units`, `--years` or `--periods`, `--period weekly\|monthly`, `--start-year` | The size |
+| `--org-units`, `--years` or `--periods`, `--period weekly` or `monthly`, `--start-year` | The size |
 | `--columns N` | The first N of disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation (default 10) |
 | `--column NAME` (repeatable) | Your own column names instead; the first is the target |
 | `--missing` | The share of missing target values (default 0.002) |
-| `--geometry point\|polygon`, `--corners N` | Facility points (default) or district areas with N points per border (default 800) |
-| `--format csv\|geojson\|json-columns\|json-rows` (repeatable) | Other formats besides Parquet |
+| `--geometry point` or `polygon`, `--corners N` | Facility points (default) or district areas with N points per border (default 800) |
+| `--format` with `csv`, `geojson`, `json-columns` or `json-rows` (repeatable) | Other formats besides Parquet |
 | `--masked START:END`, `--no-metadata`, `--spec-version` | The settings in the file's metadata |
 | `--covariate-gaps N`, `--drop-locations N` | Org units Chap must reject |
 | `--duplicate-rows N`, `--text-column NAME`, `--drop-time-period`, `--not-parquet` | Files Chap must refuse |
