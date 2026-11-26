@@ -220,40 +220,39 @@ uv run chap-test-data compare 03-facility-points --wait          # real import, 
 `--all` takes every dataset expected to import, including `20-phase1-max-weekly-10y`, whose
 one-object-per-value JSON body is several GB; name the datasets to leave it out.
 
-Results of 2026-11-25, with the datasets as generated then (4 value columns, before the values
-followed chapkit's ranges; full tables in `results/compare.md`).
-Request is the median of 3 dry runs; worker is one real import.
+Results of 2026-11-26, dry runs directly to Chap, median of 3 (datasets from
+`./generate-datasets.sh`, 4 value columns; full tables in `results/compare.md`):
 
-| Dataset | Format | Body | Request, direct | Request, DHIS2 | Worker |
-| --- | --- | --- | --- | --- | --- |
-| 03-facility-points, 1,500 x 365 | Parquet | 2.0 MB | 0.98 s | 1.09 s | 54 s |
-| | JSON columns | 29.0 MB (14x) | 1.42 s (1.5x) | 1.45 s (1.3x) | 54 s |
-| | JSON rows | 209.2 MB (104x) | 16.16 s (16.5x) | 15.73 s (14.5x) | 53 s |
-| 05-facility-points-2000, 2,000 x 365 | Parquet | 2.7 MB | 1.30 s | 1.39 s | 70 s |
-| | JSON columns | 38.7 MB (14x) | 1.82 s (1.4x) | 1.96 s (1.4x) | 74 s |
-| | JSON rows | 278.9 MB (104x) | 21.14 s (16.3x) | 20.77 s (14.9x) | 73 s |
-| 04-facility-polygons, 1,500 x 365, large polygons | Parquet | 37.4 MB | 10.10 s | 10.56 s | 86 s |
-| | JSON columns | 154.6 MB (4x) | 12.63 s (1.3x) | 12.99 s (1.2x) | 86 s |
-| | JSON rows | 334.7 MB (9x) | 26.03 s (2.6x) | 26.32 s (2.5x) | 89 s |
-| 02-district-weekly, 150 x 365 | Parquet | 1.0 MB | 0.34 s | 0.47 s | 6 s |
-| | JSON columns | 6.0 MB (6x) | 0.42 s (1.3x) | 0.49 s (1.0x) | 6 s |
-| | JSON rows | 24.1 MB (24x) | 2.00 s (5.9x) | 2.08 s (4.4x) | 6 s |
+| Dataset | Format | Body | Request |
+| --- | --- | --- | --- |
+| 03-facility-points, 1,500 x 365 | Parquet | 3.8 MB | 0.98 s |
+| | JSON columns | 31.4 MB (8.2x) | 1.37 s (1.4x) |
+| | JSON rows | 211.5 MB (55x) | 15.18 s (15.5x) |
+| 05-facility-points-2000, 2,000 x 365 | Parquet | 5.1 MB | 1.30 s |
+| | JSON columns | 41.9 MB (8.2x) | 1.87 s (1.4x) |
+| | JSON rows | 282.0 MB (55x) | 20.66 s (15.9x) |
+| 04-facility-polygons, 1,500 x 365, large polygons | Parquet | 40.8 MB | 10.57 s |
+| | JSON columns | 158.1 MB (3.9x) | 13.00 s (1.2x) |
+| | JSON rows | 338.2 MB (8.3x) | 26.14 s (2.5x) |
+| 02-district-weekly, 150 x 365 | Parquet | 1.2 MB | 0.43 s |
+| | JSON columns | 6.3 MB (5.1x) | 0.40 s (0.9x) |
+| | JSON rows | 24.3 MB (20x) | 1.92 s (4.4x) |
 
 What it shows:
 
-- **Size is the big win.** At facility scale the Parquet upload is 14x smaller than today's
-  columnar JSON and about 100x smaller than one object per value. With large polygons the
-  geometry dominates and the gap narrows to 4x and 9x.
-- **On the server, Parquet is 1.2x to 1.5x faster than columnar JSON** and 15x faster than one
-  object per value. Most of what is left is the same import path for all three formats.
-- **The worker takes the same time for every format**, because all three queue the same job.
-  Once the upload is fast, the worker is where the time goes; Phase 2 (stored files) targets that.
-- **The DHIS2 route adds about 0.1 s** and keeps the same ratios.
-- **Small datasets** take well under a second in every format; Parquet's fixed cost of reading
-  the files makes it a few hundredths of a second slower.
+- **Size is the big win.** At facility scale the Parquet upload is about 8x smaller than today's
+  columnar JSON and about 55x smaller than one object per value. How much smaller depends on the
+  data: the first test data (2026-11-25), with smoother values, gave 14x and 104x. Real DHIS2 data
+  may land anywhere in between. With large polygons the geometry dominates and the gap narrows
+  to 4x and 8x.
+- **On the server, Parquet is 1.2x to 1.4x faster than columnar JSON** and 15x faster than one
+  object per value. For small datasets the two are about even.
+- **The worker takes the same time for every format** (54 s at 1,500 facilities, 70 s at 2,000,
+  measured 2026-11-25), because all three queue the same job. Phase 2 (stored files) removes it.
+- **The DHIS2 route adds about 0.1 s** and keeps the same ratios (measured 2026-11-25).
 - These uploads ran on one machine, so transfer time is near zero. Over a real link the body
-  size counts directly: at 10 Mbit/s, 29 MB of columnar JSON takes about 23 s to send and the
-  2 MB Parquet file about 1.6 s.
+  size counts directly: at 10 Mbit/s, 31 MB of columnar JSON takes about 25 s to send and the
+  3.8 MB Parquet file about 3 s.
 
 ## Timing the Phase 2 checks
 

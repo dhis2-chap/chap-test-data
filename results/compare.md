@@ -103,3 +103,20 @@
 | 10-missing-polygons | parquet | 0.03 MB | 1.0x | 200 | 0.08 s | 1.0x | 0.2 s | 16 |
 | 10-missing-polygons | json-columns | 0.08 MB | 2.4x | 200 | 0.05 s | 0.6x | 0.2 s | 16 |
 | 10-missing-polygons | json-rows | 0.32 MB | 9.4x | 200 | 0.06 s | 0.8x | 0.2 s | 16 |
+
+### 2026-11-26 11:11, direct, dry run
+
+| Dataset | Format | Body | Body vs Parquet | HTTP | Request | Request vs Parquet | Worker | Imported |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 02-district-weekly | parquet | 1.24 MB | 1.0x | 200 | 0.43 s | 1.0x |  | 150 |
+| 02-district-weekly | json-columns | 6.33 MB | 5.1x | 200 | 0.40 s | 0.9x |  | 150 |
+| 02-district-weekly | json-rows | 24.34 MB | 19.6x | 200 | 1.92 s | 4.4x |  | 150 |
+| 03-facility-points | parquet | 3.84 MB | 1.0x | 200 | 0.98 s | 1.0x |  | 1500 |
+| 03-facility-points | json-columns | 31.40 MB | 8.2x | 200 | 1.37 s | 1.4x |  | 1500 |
+| 03-facility-points | json-rows | 211.53 MB | 55.1x | 200 | 15.18 s | 15.5x |  | 1500 |
+| 04-facility-polygons | parquet | 40.83 MB | 1.0x | 200 | 10.57 s | 1.0x |  | 1500 |
+| 04-facility-polygons | json-columns | 158.05 MB | 3.9x | 200 | 13.00 s | 1.2x |  | 1500 |
+| 04-facility-polygons | json-rows | 338.18 MB | 8.3x | 200 | 26.14 s | 2.5x |  | 1500 |
+| 05-facility-points-2000 | parquet | 5.11 MB | 1.0x | 200 | 1.30 s | 1.0x |  | 2000 |
+| 05-facility-points-2000 | json-columns | 41.86 MB | 8.2x | 200 | 1.87 s | 1.4x |  | 2000 |
+| 05-facility-points-2000 | json-rows | 282.03 MB | 55.1x | 200 | 20.66 s | 15.9x |  | 2000 |
