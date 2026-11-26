@@ -1,4 +1,4 @@
-.PHONY: help lint check build
+.PHONY: help lint check test coverage build
 help: ## show the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
 
@@ -13,6 +13,13 @@ check: ## the same checks without changing files
 	uv run ruff format --check
 	uv run mypy
 	uv run pyright
+
+test: ## run the tests (no Chap needed)
+	uv run pytest -q
+
+coverage: ## run the tests with coverage
+	uv run coverage run -m pytest -q
+	uv run coverage report
 
 build: ## build the wheel and sdist into dist/
 	uv build

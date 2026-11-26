@@ -3,8 +3,9 @@ name = "chap-test-data"
 version = "0.1.0"
 description = "Generate Chap test datasets (Parquet, CSV, GeoJSON, make-dataset JSON) and upload, check and compare them against Chap"
 readme = "README.md"
+license = { text = "AGPLv3 license" }
 authors = [
-    { name = "Morten Hansen", email = "morten@winterop.com" }
+    { name = "Morten Hansen", email = "morten@dhis2.org" }
 ]
 requires-python = ">=3.13"
 dependencies = [
@@ -28,9 +29,11 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "coverage>=7.17.5",
     "mypy>=2.4.1",
     "pandas-stubs>=3.1.0.261029",
     "pyright>=1.1.414",
+    "pytest>=9.2.0",
     "ruff>=0.17.6",
     "types-geopandas>=1.2.0.20261122",
     "types-shapely>=2.2.0.20261122",
@@ -39,6 +42,10 @@ dev = [
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+# As in chap-core: tests are formatted, not linted.
+"tests/**/*.py" = ["ALL"]
 
 [tool.ruff.lint]
 select = ["I", "UP", "F", "B", "C4", "PIE", "RUF", "FURB", "PERF", "ISC", "RSE", "W", "A", "TCH", "SIM", "S"]
@@ -68,3 +75,15 @@ pythonVersion = "3.13"
 include = ["src/"]
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["chap_test_data"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = true
