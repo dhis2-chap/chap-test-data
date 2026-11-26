@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pyarrow.parquet as pq
 import pytest
 
@@ -101,12 +102,23 @@ def test_named_columns_replace_the_defaults_and_the_first_is_the_target(tmp_path
     assert dataset["target_column"] == "malaria_cases"
 
 
-def test_polygons_have_the_number_of_corners_asked_for(tmp_path):
-    directory, _ = generate(tmp_path, geometry="polygon", corners=3)
-    locations = gpd.read_parquet(directory / "locations.parquet")
-    assert len(locations) == 6
-    assert all(len(polygon.exterior.coords) == 4 for polygon in locations.geometry)  # 3 corners, ring closed
-    assert not locations.geometry.overlaps(locations.geometry.shift()).any()
+def test_polygons_tile_a_country_like_map(tmp_path):
+    import shapely
+
+    directory, _ = generate(tmp_path, org_units=40, geometry="polygon")
+    polygons = gpd.read_parquet(directory / "locations.parquet").geometry.to_numpy()
+    assert len(polygons) == 40 and shapely.is_valid(polygons).all()
+    assert set(shapely.get_type_id(polygons)) == {3}  # Polygon, one piece each
+    # About 800 points per area, the default.
+    assert 600 < np.median(shapely.get_num_coordinates(polygons)) < 1000
+    # No gaps and no overlaps: the areas add up to the country they tile (to floating-point noise).
+    country = shapely.union_all(polygons)
+    assert country.geom_type == "Polygon"
+    assert sum(shapely.Polygon(hole).area for hole in country.interiors) < 1e-12 * country.area
+    assert abs(country.area - shapely.area(polygons).sum()) < 1e-9 * country.area
+    # As real boundaries: a border much longer than a circle of the same area (chap-core's examples: 1.4 to 1.9).
+    ratio = np.median([p.length / (2 * np.sqrt(np.pi * p.area)) for p in polygons])
+    assert 1.4 < ratio < 2.1
     metadata = pq.read_schema(directory / "locations.parquet").metadata
     assert b"geo" in metadata and metadata[b"chap.spec_version"] == b"1"
 

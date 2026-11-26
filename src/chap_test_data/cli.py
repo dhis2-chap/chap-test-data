@@ -26,6 +26,12 @@ RESULTS = Path("results")
 DEFAULT = Target()
 
 
+class CompareFormat(StrEnum):
+    parquet = "parquet"
+    json_columns = "json-columns"
+    json_rows = "json-rows"
+
+
 class Format(StrEnum):
     parquet = "parquet"
     csv = "csv"
@@ -46,6 +52,13 @@ class Period(StrEnum):
 
 Dhis2 = Annotated[bool, typer.Option("--dhis2", help="Go through the DHIS2 route, as the Modeling App would.")]
 DryRun = Annotated[bool, typer.Option("--dry-run", help="Validate only (dryRun=true); nothing is imported.")]
+Bandwidth = Annotated[
+    float | None,
+    typer.Option(
+        help="Send at most this many Mbit/s, as a slow link would (default: as fast as possible). "
+        "The time reported includes sending."
+    ),
+]
 
 
 class State:
@@ -76,8 +89,9 @@ def connection(
     )
 
 
-def target(dhis2: bool) -> Target:
+def target(dhis2: bool, bandwidth: float | None = None) -> Target:
     State.target.dhis2 = dhis2
+    State.target.bandwidth = bandwidth
     return State.target
 
 
@@ -108,8 +122,12 @@ def generate(
         Geometry.point
     ),
     corners: Annotated[
-        int, typer.Option(help="Corners of each polygon, for --geometry polygon: 3 is a triangle, 64 nearly round.")
-    ] = 64,
+        int,
+        typer.Option(
+            help="Points on each polygon's border, for --geometry polygon. The default, 800, is the median of "
+            "chap-core's example boundaries; borders are jagged like real ones (3 still gives a triangle)."
+        ),
+    ] = 800,
     missing: Annotated[float, typer.Option(help="Share of missing disease_cases values.")] = 0.002,
     seed: Annotated[
         int | None,
@@ -214,10 +232,11 @@ def upload(
     directory: Annotated[Path, typer.Argument(help="A dataset folder, such as datasets/03-facility-points.")],
     dhis2: Dhis2 = False,
     dry_run: DryRun = False,
+    bandwidth: Bandwidth = None,
     wait: Annotated[bool, typer.Option(help="Wait for the import job and report how it ended.")] = False,
 ) -> None:
     """Upload one dataset folder."""
-    answer = upload_files(target(dhis2), directory, dry_run)
+    answer = upload_files(target(dhis2, bandwidth), directory, dry_run)
     typer.echo(json.dumps(answer.body, indent=2) if not isinstance(answer.body, str) else answer.body)
     typer.echo(f"HTTP {answer.http} in {answer.seconds:.2f} s, {answer.bytes / 1e6:,.2f} MB sent")
     job = answer.body.get("id") if isinstance(answer.body, dict) else None
@@ -255,6 +274,11 @@ def compare(
     root: Annotated[Path, typer.Option(help="Folder of dataset folders.")] = DATASETS,
     dhis2: Dhis2 = False,
     dry_run: DryRun = False,
+    bandwidth: Bandwidth = None,
+    formats: Annotated[
+        list[CompareFormat] | None,
+        typer.Option("--format", help="Formats to upload (default: all three); repeatable."),
+    ] = None,
     wait: Annotated[bool, typer.Option(help="After an import, wait for the job and report the worker's time.")] = False,
     repeat: Annotated[int, typer.Option(help="Upload each format N times and report the median time.")] = 1,
     results: Annotated[Path, typer.Option(help="Markdown file the table is appended to.")] = RESULTS / "compare.md",
@@ -267,11 +291,12 @@ def compare(
         )
     if not names:
         raise typer.BadParameter("name datasets or pass --all")
-    lines = [comparison.header(target(dhis2), dry_run)]
+    chosen: list[str] = [f.value for f in formats] if formats else [str(f) for f in comparison.FORMATS]
+    lines = [comparison.header(target(dhis2, bandwidth), dry_run)]
     typer.echo(lines[0])
     with tempfile.TemporaryDirectory() as tmp:
         for name in names:
-            for line in comparison.compare_dataset(State.target, root / name, Path(tmp), dry_run, wait, repeat):
+            for line in comparison.compare_dataset(State.target, root / name, Path(tmp), dry_run, wait, repeat, chosen):
                 lines.append(line)
                 typer.echo(line)
     results.parent.mkdir(parents=True, exist_ok=True)

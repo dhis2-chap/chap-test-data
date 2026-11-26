@@ -22,20 +22,31 @@ FORMATS = ("parquet", "json-columns", "json-rows")
 def header(target: Target, dry_run: bool) -> str:
     via = "through DHIS2" if target.dhis2 else "direct"
     mode = "dry run" if dry_run else "import"
+    link = f", sent at {target.bandwidth:g} Mbit/s" if target.bandwidth else ""
     return (
-        f"\n### {datetime.now():%Y-%m-%d %H:%M}, {via}, {mode}\n\n"
+        f"\n### {datetime.now():%Y-%m-%d %H:%M}, {via}, {mode}{link}\n\n"
         "| Dataset | Format | Body | Body vs Parquet | HTTP | Request | Request vs Parquet | Worker | Imported |\n"
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"
     )
 
 
 def compare_dataset(
-    target: Target, directory: Path, tmp: Path, dry_run: bool, wait: bool, repeat: int
+    target: Target,
+    directory: Path,
+    tmp: Path,
+    dry_run: bool,
+    wait: bool,
+    repeat: int,
+    formats: list[str] | None = None,
 ) -> Iterator[str]:
-    """Upload one dataset in every format; yields one table row per format."""
-    bodies = {fmt: export(directory, fmt, tmp / directory.name)[0] for fmt in ("json-columns", "json-rows")}
+    """Upload one dataset in each format (default all three); yields one table row per format.
+
+    The ratios compare with Parquet, so they are filled in only when Parquet is among the formats.
+    """
+    formats = formats or list(FORMATS)
+    bodies = {fmt: export(directory, fmt, tmp / directory.name)[0] for fmt in formats if fmt != "parquet"}
     baseline: dict[str, float] = {}
-    for fmt in FORMATS:
+    for fmt in [f for f in FORMATS if f in formats]:
         runs: list[Answer] = [
             upload_files(target, directory, dry_run)
             if fmt == "parquet"

@@ -50,8 +50,9 @@ def geojson_text(directory: Path) -> str:
 
 def write_geojson(directory: Path, out: Path) -> None:
     target = out / "locations.geojson"
-    if (directory / "locations.geojson").resolve() != target.resolve():
-        target.write_text(geojson_text(directory))
+    if target.exists() and target.resolve() == (directory / "locations.geojson").resolve():
+        return  # the dataset's own GeoJSON locations
+    target.write_text(geojson_text(directory))
 
 
 def batches(observations: Path, columns: list[str] | None = None) -> Iterator[pa.RecordBatch]:

@@ -13,6 +13,7 @@
 #   DHIS2_URL       DHIS2, used with --dhis2              (default http://localhost:8080)
 #   DHIS2_USER / DHIS2_PASSWORD                           (default admin / district)
 #   ROUTE_CODE      the route's code in DHIS2             (default chap)
+#   BANDWIDTH       send at most this many Mbit/s, as a slow link would (default: as fast as possible)
 set -euo pipefail
 
 CHAP_URL=${CHAP_URL:-http://localhost:8000}
@@ -47,7 +48,12 @@ else
   [[ -n ${CHAP_API_TOKEN:-} ]] && auth=(-H "Authorization: Bearer $CHAP_API_TOKEN")
 fi
 
-curl -sS ${auth[@]+"${auth[@]}"} -X POST "$url" \
+limit=()
+if [[ -n ${BANDWIDTH:-} ]]; then
+  limit=(--limit-rate "$(awk -v m="$BANDWIDTH" 'BEGIN { printf "%d", m * 125000 }')")  # Mbit/s to bytes/s
+fi
+
+curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" \
   -F "observations=@$observations" \
   -F "locations=@$locations" \
   -w $'\nHTTP %{http_code} in %{time_total}s\n'

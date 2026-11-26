@@ -82,3 +82,40 @@ def test_an_answer_matches_its_expected_json():
     refused = Expected(http=422, detail="not a Parquet file")
     assert matches(refused, Answer(http=422, seconds=0, bytes=0, body={"detail": "observations is not a Parquet file"}))
     assert not matches(refused, Answer(http=413, seconds=0, bytes=0, body={"detail": "too large"}))
+
+
+def test_throttled_sends_no_faster_than_the_bandwidth():
+    import time
+
+    from chap_test_data.client import throttled
+
+    data = b"x" * 250_000  # 2 Mbit
+    started = time.perf_counter()
+    assert b"".join(throttled(data, mbit=20)) == data
+    assert time.perf_counter() - started >= 0.09  # 2 Mbit at 20 Mbit/s takes 0.1 s
+
+
+def test_multipart_holds_both_files_with_their_names(tmp_path):
+    from chap_test_data.client import multipart
+
+    (tmp_path / "observations.parquet").write_bytes(b"PAR1data")
+    (tmp_path / "locations.geojson").write_text("{}")
+    body, content_type = multipart(
+        [
+            ("observations", tmp_path / "observations.parquet", "application/vnd.apache.parquet"),
+            ("locations", tmp_path / "locations.geojson", "application/geo+json"),
+        ]
+    )
+    boundary = content_type.split("boundary=")[1]
+    assert body.endswith(f"--{boundary}--\r\n".encode())
+    assert b'name="observations"; filename="observations.parquet"' in body and b"PAR1data" in body
+    assert b'name="locations"; filename="locations.geojson"' in body
+
+
+def test_geojson_is_written_next_to_the_parquet_locations(tmp_path):
+    directory = dataset(tmp_path)
+    assert export(directory, "geojson") == [directory / "locations.geojson"]
+    collection = json.loads((directory / "locations.geojson").read_text())
+    assert [f["id"] for f in collection["features"]] == pq.read_table(directory / "locations.parquet").column(
+        "location"
+    ).to_pylist()

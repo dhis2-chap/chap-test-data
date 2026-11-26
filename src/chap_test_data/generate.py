@@ -4,6 +4,7 @@ Options also make the files Chap must reject or partly reject, and expected.json
 answer Chap's Phase 1 endpoint should give.
 """
 
+import itertools
 import json
 import secrets
 import shutil
@@ -60,7 +61,7 @@ class DatasetSpec(BaseModel):
     columns: int = 10
     column_names: list[str] = []
     geometry: str = "point"
-    corners: int = 64
+    corners: int = 800
     missing: float = 0.002
     seed: int | None = None  # None: a random seed, recorded in expected.json
     about: str = ""
@@ -205,26 +206,118 @@ def chap_keys(spec: DatasetSpec, names: list[str]) -> dict[bytes, bytes]:
     return {k.encode(): v.encode() for k, v in keys.items()}
 
 
-def locations(ids: np.ndarray, corners: int | None, seed: int) -> gpd.GeoDataFrame:
-    """Org units as a grid of adjacent cells near Nairobi, as chapkit's generator lays them out.
+def _room(t: np.ndarray, apex: float, height: float) -> np.ndarray:
+    """Height at t of a triangle on the base [0, 1] whose apex is above `apex` at `height`."""
+    rise = t / apex if apex > 1e-9 else np.full_like(t, np.inf)
+    fall = (1 - t) / (1 - apex) if apex < 1 - 1e-9 else np.full_like(t, np.inf)
+    result: np.ndarray = height * np.minimum(np.minimum(rise, fall), 1.0)
+    return result
 
-    Cells are 0.8 degrees, shrinking for large counts so the grid stays within about 18 degrees.
-    Points sit at the cell centres; with corners each org unit is a regular polygon with that many
-    corners inside its cell (3 is a triangle).
+
+def jagged_areas(n: int, corners: int, rng: np.random.Generator) -> tuple[np.ndarray, Any]:
+    """n areas that tile a country-like map: no gaps, no overlaps, jagged shared borders.
+
+    The areas start as Voronoi cells of a jittered grid, and the country is an irregular blob of them. Every border between two neighbours, and
+    every piece of the outline, is then drawn once as a jagged line (a Brownian bridge, so its ends
+    stay put) and shared by both sides. Each line stays inside the triangles from the border to the
+    two centre points; those triangles never overlap, so borders never cross. Borders get about
+    `corners` points per area, and the jaggedness grows slowly with the points as real borders do:
+    the border is 1.7 times the perimeter of a circle of the same area at 800 points (chap-core's
+    example boundaries: 1.4 to 1.9). Returns the centre points and the polygons.
+    """
+    # Tile about 70% more areas than needed on a grid, then keep the n whose centres fall inside an
+    # irregular blob: the country. Its outline is then made of ordinary shared borders, so it is as
+    # jagged and irregular as the borders inside.
+    total = max(n, int(np.ceil(n * 1.7)) + 4)
+    side = int(np.ceil(np.sqrt(total)))
+    rows = int(np.ceil(total / side))
+    cell = min(0.8, 18 / np.sqrt(n))
+    origin_lon, origin_lat = 36.8 - side * cell / 2, -1.3 - rows * cell / 2
+    grid = np.stack(
+        [
+            origin_lon + (np.arange(total) % side + 0.5 + rng.uniform(-0.3, 0.3, total)) * cell,
+            origin_lat + (np.arange(total) // side + 0.5 + rng.uniform(-0.3, 0.3, total)) * cell,
+        ],
+        axis=1,
+    )
+    centre = np.array([origin_lon + side * cell / 2, origin_lat + rows * cell / 2])
+    angle = np.arctan2(grid[:, 1] - centre[1], grid[:, 0] - centre[0])
+    phase = rng.uniform(0, 2 * np.pi, 3)
+    reach = 1 + 0.25 * sum(np.sin(h * angle + phase[i]) for i, h in enumerate((2, 3, 4))) / 3
+    chosen = np.sort(np.argsort(np.linalg.norm(grid - centre, axis=1) / reach)[:n])
+    sites = grid
+    bounds = shapely.box(origin_lon, origin_lat, origin_lon + side * cell, origin_lat + rows * cell)
+    cells = shapely.intersection(
+        shapely.get_parts(shapely.voronoi_polygons(shapely.multipoints(sites), extend_to=bounds, ordered=True)),
+        bounds,
+    )
+    # Each straight border once, with the areas on its sides (one for the outline, two inside).
+    rings = []
+    sides: dict[tuple[tuple[float, float], tuple[float, float]], list[int]] = {}
+    for i, polygon in enumerate(cells):
+        ring = np.round(shapely.get_coordinates(shapely.get_exterior_ring(polygon)), 9)
+        ring = ring[np.r_[True, np.any(np.diff(ring, axis=0) != 0, axis=1)]]  # no zero-length borders
+        rings.append(ring)
+        for a, b in itertools.pairwise(ring):
+            key = (tuple(a), tuple(b)) if tuple(a) < tuple(b) else (tuple(b), tuple(a))
+            sides.setdefault(key, []).append(i)  # type: ignore[arg-type]
+    per_degree = corners / (4 * cell)
+    amplitude = 0.21 * (corners / 800) ** -0.3
+    lines = {}
+    for key, owners in sides.items():
+        a, b = np.array(key[0]), np.array(key[1])
+        length = float(np.linalg.norm(b - a))
+        direction = (b - a) / length
+        normal = np.array([-direction[1], direction[0]])
+        t = np.linspace(0, 1, max(2, round(length * per_degree)))
+        offset = np.zeros_like(t)
+        if len(t) > 2:
+            walk = np.concatenate([[0.0], np.cumsum(rng.normal(0, 1, len(t) - 1))])
+            bridge = walk - t * walk[-1]
+            bridge /= max(1e-12, float(np.abs(bridge).max()))
+            room = {}
+            for owner in owners:
+                relative = sites[owner] - a
+                across = float(relative @ normal)
+                room[np.sign(across)] = _room(t, float(relative @ direction) / length, abs(across))
+            if len(owners) == 1:  # the outline: as much room outside, with the apex kept over the border
+                ((inside, _),) = room.items()
+                relative = sites[owners[0]] - a
+                apex = float(np.clip(relative @ direction / length, 0.2, 0.8))
+                room[-inside] = _room(t, apex, abs(float(relative @ normal)))
+            zero = np.zeros_like(t)
+            offset = amplitude * bridge * np.where(bridge >= 0, room.get(1.0, zero), room.get(-1.0, zero))
+        lines[key] = a + t[:, None] * (b - a) + offset[:, None] * normal
+    polygons = np.empty(n, dtype=object)
+    for position, i in enumerate(chosen):
+        ring = rings[i]
+        pieces = []
+        for a, b in itertools.pairwise(ring):
+            forward = (tuple(a), tuple(b))
+            line = lines[forward] if forward in lines else lines[(tuple(b), tuple(a))][::-1]  # type: ignore[index]
+            pieces.append(line[:-1])
+        polygons[position] = shapely.Polygon(np.concatenate(pieces))
+    return sites[chosen], polygons
+
+
+def locations(ids: np.ndarray, corners: int | None, seed: int) -> gpd.GeoDataFrame:
+    """Org units near Nairobi, laid out on a grid as chapkit's generator does.
+
+    Cells are 0.8 degrees, shrinking for large counts so the map stays within about 18 degrees.
+    Without corners, each org unit is a point near its cell centre (a facility). With corners, it is
+    an irregular area with a jagged border of that many points (a district); see jagged_areas.
     """
     rng = np.random.default_rng(seed)
     n = len(ids)
-    side = int(np.ceil(np.sqrt(n)))
-    cell = min(0.8, 18 / side)
-    origin_lon, origin_lat = 36.8 - side * cell / 2, -1.3 - side * cell / 2
-    x = origin_lon + (np.arange(n) % side + 0.5) * cell + rng.uniform(-0.05, 0.05, n) * cell
-    y = origin_lat + (np.arange(n) // side + 0.5) * cell + rng.uniform(-0.05, 0.05, n) * cell
-    geometry: Any = shapely.points(x, y)
     if corners:
-        angles = np.linspace(0, 2 * np.pi, corners, endpoint=False)
-        radius = 0.4 * cell  # with the jitter above, neighbours never overlap
-        ring = np.stack([x[:, None] + radius * np.cos(angles), y[:, None] + radius * np.sin(angles)], axis=-1)
-        geometry = shapely.polygons(ring)
+        _, geometry = jagged_areas(n, corners, rng)
+    else:
+        side = int(np.ceil(np.sqrt(n)))
+        cell = min(0.8, 18 / side)
+        origin_lon, origin_lat = 36.8 - side * cell / 2, -1.3 - side * cell / 2
+        x = origin_lon + (np.arange(n) % side + 0.5 + rng.uniform(-0.05, 0.05, n)) * cell
+        y = origin_lat + (np.arange(n) // side + 0.5 + rng.uniform(-0.05, 0.05, n)) * cell
+        geometry = shapely.points(x, y)
     parents = org_unit_ids(max(1, n // 50), seed + 1)
     return gpd.GeoDataFrame(
         {
@@ -267,7 +360,7 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
     if spec.covariate_gaps and len(names) < 2:
         raise ValueError("covariate gaps go into the last covariate, so there must be at least 2 columns")
     if spec.geometry == "polygon" and spec.corners < 3:
-        raise ValueError("a polygon needs at least 3 corners")
+        raise ValueError("a polygon needs at least 3 points")
     if spec.covariate_gaps + spec.drop_locations > spec.org_units:
         raise ValueError("more org units rejected than there are")
     shutil.rmtree(directory, ignore_errors=True)
@@ -313,7 +406,7 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         locations_path = directory / "locations.parquet"
         write_locations(frame, locations_path)
 
-    shape = f"polygons with {spec.corners} corners" if spec.geometry == "polygon" else "points"
+    shape = f"jagged polygons of {spec.corners} points" if spec.geometry == "polygon" else "points"
     about = spec.about or (
         f"{spec.org_units:,} org units x {len(periods)} {spec.period} periods "
         f"({periods[0]} to {periods[-1]}), {len(names)} value columns, {shape}"
