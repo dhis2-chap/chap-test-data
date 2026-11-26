@@ -775,14 +775,14 @@ as Parquet only.</p>
 </tbody>
 </table>
 <h2 id="large">Large<a class="headerlink" href="#large" title="Permanent link">&para;</a></h2>
-<p>10 years with all 10 value columns. Only the first fits what Chap's Parquet upload accepts today
-(1 million rows, 100 MB per file); the others are the sizes Chap's stored datasets are designed
-for.</p>
+<p>10 years with all 10 value columns. Only the first fits what Chap's Parquet upload accepts today;
+the others are the sizes Chap's stored datasets are designed for.</p>
 <table>
 <thead>
 <tr>
 <th>Dataset</th>
 <th>Rows</th>
+<th>Observations file</th>
 <th>Expected answer</th>
 </tr>
 </thead>
@@ -790,25 +790,35 @@ for.</p>
 <tr>
 <td><code>20-phase1-max-weekly-10y</code></td>
 <td>1,900 x 522 weeks = 991,800</td>
+<td>15 MB</td>
 <td>1,900 imported</td>
 </tr>
 <tr>
 <td><code>21-facilities-20k-weekly-10y</code></td>
 <td>20,000 x 522 = 10.4 million</td>
-<td>413, file too large</td>
+<td>161 MB</td>
+<td>413: over Chap's 100 MB per-file limit</td>
 </tr>
 <tr>
 <td><code>22-org-units-100k-monthly-10y</code></td>
 <td>100,000 x 120 = 12 million</td>
-<td>413, file too large</td>
+<td>177 MB</td>
+<td>413: over Chap's 100 MB per-file limit</td>
 </tr>
 <tr>
 <td><code>23-org-units-100k-weekly-10y</code></td>
 <td>100,000 x 522 = 52.2 million</td>
-<td>413, file too large</td>
+<td>753 MB</td>
+<td>413: over Chap's 100 MB per-file limit</td>
 </tr>
 </tbody>
 </table>
+<p>The limits are Chap's own, not DHIS2's: its Parquet upload accepts up to 100 MB per file and
+1 million rows. They keep one upload from taking too much of the API's memory, because Chap
+reads the whole dataset into memory as it imports it. The file size is checked first, while the
+upload arrives, so these three get 413 (too large); under 100 MB, 10 million rows would get 422
+(too many rows) instead. A DHIS2 server may have its own size limit in front of it, such as
+nginx's <code>client_max_body_size</code>, which also answers 413.</p>
 <p><code>23</code> gets no JSON body: it would be about 5 GB.</p>
 <p>Each one is a single <a href="../generating/"><code>generate</code></a> command in <code>scripts/generate-ready-made.sh</code>, so a variation
 of any of them is a matter of changing its options.</p>
