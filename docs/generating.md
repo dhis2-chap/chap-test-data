@@ -3,10 +3,14 @@
 `chap-test-data generate NAME` writes one dataset of any size and shape:
 
 ```bash
-uv run chap-test-data generate my-test --org-units 5000 --years 5 --period monthly
-uv run chap-test-data generate districts --org-units 300 --geometry polygon --format geojson
-uv run chap-test-data generate malaria --column malaria_cases --column population --column precipitation
-uv run chap-test-data generate gaps --org-units 50 --covariate-gaps 5 --drop-locations 2
+uv run chap-test-data generate my-test --org-units 5000 \
+  --years 5 --period monthly
+uv run chap-test-data generate districts --org-units 300 \
+  --geometry polygon --format geojson
+uv run chap-test-data generate malaria --column malaria_cases \
+  --column population --column precipitation
+uv run chap-test-data generate gaps --org-units 50 \
+  --covariate-gaps 5 --drop-locations 2
 uv run chap-test-data generate --help
 ```
 

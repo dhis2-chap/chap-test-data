@@ -2,7 +2,7 @@
 
 ## Install
 
-You need [uv](https://docs.astral.sh/uv/) and Python 3.13 (uv installs it for you).
+You need [uv](https://docs.astral.sh/uv/), which also installs the Python version it needs (3.13).
 
 ```bash
 git clone https://github.com/dhis2-chap/chap-test-data && cd chap-test-data
@@ -10,12 +10,13 @@ uv sync
 uv run chap-test-data --help
 ```
 
-Generating datasets needs nothing else. Uploading needs a running Chap, and the DHIS2 route a
-running DHIS2; both run in Docker.
+That is all you need to generate datasets. To upload them you also need a running Chap, and to
+upload through DHIS2 a running DHIS2. Both run in Docker, as below.
 
 ## Start Chap
 
-The Parquet upload is on the chap-core branch `feat/dataset-parquet-upload`:
+The Parquet upload is on the chap-core branch `feat/dataset-parquet-upload`. From a chap-core
+checkout next to this one:
 
 ```bash
 cd ../chap-core
@@ -24,39 +25,49 @@ docker compose -p chap-test-data up -d --build
 curl localhost:8000/health
 ```
 
-The project name `chap-test-data` keeps this stack and its volumes apart from any other Chap you
-run. Chap answers on `http://localhost:8000`, without a token unless `CHAP_API_TOKEN` is set in
-chap-core's `.env`.
+`-p chap-test-data` gives this Chap its own name in Docker, so it and its data stay apart from
+any other Chap you run. It answers on `http://localhost:8000`, without a token unless
+`CHAP_API_TOKEN` is set in chap-core's `.env`.
 
-## Start DHIS2 (for the route)
+## Start DHIS2
 
-`dhis2/` holds a DHIS2 that joins Chap's Docker network, and a script that creates the route
-`chap` pointing at Chap. The first start takes a minute or two.
+The Modeling App does not talk to Chap directly: it goes through a DHIS2 route, which passes its
+requests on to Chap. To test that path, `dhis2/` holds a DHIS2 that runs next to Chap, and a
+script that creates a route named `chap` pointing at it. The first start takes a minute or two.
 
 ```bash
 cd dhis2
 docker compose up -d          # DHIS2 2.43.2.1
-./setup-route.sh              # waits for DHIS2, then creates the route chap -> http://chap:8000/**
+# waits until DHIS2 is up, then creates the route chap -> http://chap:8000/**
+./setup-route.sh
 cd ..
 ```
 
-Another DHIS2 version: `DHIS2_TAG=2.42.7.1 docker compose up -d`, after `docker compose down -v`
-so the database starts fresh. For a DHIS2 elsewhere, set the connection settings below and make
-sure it allows the route's target in `route.remote_servers_allowed`.
+For another DHIS2 version, remove the old one with its data first:
+`docker compose down -v`, then `DHIS2_TAG=2.42.7.1 docker compose up -d`. To use a DHIS2 that
+runs elsewhere, point the connection settings below at it, and make sure it allows the route's
+address in its `route.remote_servers_allowed` setting.
 
 ## Connection settings
 
-Every command that talks to Chap takes these as options or environment variables:
+`upload`, `check` and `compare` find Chap and DHIS2 through these settings. Each can be given as
+an option before the command (`uv run chap-test-data --chap-url http://... check`) or as an
+environment variable.
 
-| Variable | Default |
-| --- | --- |
-| `CHAP_URL` | `http://localhost:8000` |
-| `CHAP_API_TOKEN` | none |
-| `DHIS2_URL` | `http://localhost:8080` |
-| `DHIS2_USER`, `DHIS2_PASSWORD` | `admin`, `district` |
-| `ROUTE_CODE` | `chap` |
+| Option | Environment variable | Default | What it is |
+| --- | --- | --- | --- |
+| `--chap-url` | `CHAP_URL` | `http://localhost:8000` | Where Chap's API answers. |
+| `--chap-token` | `CHAP_API_TOKEN` | none | Chap's API token, if Chap is set up to require one. |
+| `--dhis2-url` | `DHIS2_URL` | `http://localhost:8080` | Where DHIS2 answers, for uploads with `--dhis2`. |
+| `--dhis2-user` | `DHIS2_USER` | `admin` | The DHIS2 user name. |
+| `--dhis2-password` | `DHIS2_PASSWORD` | `district` | The DHIS2 password. |
+| `--route-code` | `ROUTE_CODE` | `chap` | The code of the DHIS2 route that passes requests on to Chap. |
+
+The curl scripts read the same environment variables.
 
 ## Stop
+
+This removes both, with their data:
 
 ```bash
 cd dhis2 && docker compose down -v && cd ..
@@ -65,6 +76,11 @@ cd ../chap-core && docker compose -p chap-test-data down -v
 
 ## Developing
 
-`make lint` runs ruff, mypy and pyright, the same tools as chap-core. `make test` runs the
-tests, which need no running Chap. `make docs` builds this site, and `make build` the package.
+| Command | What it does |
+| --- | --- |
+| `make lint` | Fixes and checks the code style, and checks the types (ruff, mypy and pyright, as chap-core). |
+| `make test` | Runs the tests. They need no running Chap. |
+| `make docs` | Builds this site into `site/`. `make docs-serve` shows it at http://127.0.0.1:8000 while you edit. |
+| `make build` | Builds the package. |
+
 CI runs them on every push.
