@@ -1,5 +1,9 @@
 # chap-test-data
 
+[![CI](https://github.com/dhis2-chap/chap-test-data/actions/workflows/ci.yml/badge.svg)](https://github.com/dhis2-chap/chap-test-data/actions/workflows/ci.yml)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 Generate synthetic Chap datasets of any size, as Parquet, CSV, GeoJSON or the `make-dataset`
 JSON bodies, and upload, check and compare them against Chap. Made for Chap's Parquet dataset
 upload, `POST /v1/crud/datasets/files`, from the chap-core branch `feat/dataset-parquet-upload`
@@ -26,7 +30,8 @@ The format and the metadata keys are described in chap-core's `docs/webapi/datas
 | `results/compare.md` | The comparison tables from the last runs |
 
 Setup: `uv sync`, then `uv run chap-test-data --help`. `make lint` runs ruff, mypy and pyright, the
-same tools as chap-core; `make build` (or `uv build`) builds the package.
+same tools as chap-core; `make test` runs the tests, which need no running Chap; `make build` (or
+`uv build`) builds the package. CI runs all three on every pull request.
 
 ## Generate datasets
 
