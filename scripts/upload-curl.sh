@@ -2,7 +2,7 @@
 # Upload one dataset folder to Chap's POST /v1/crud/datasets/files with plain curl, directly or
 # through a DHIS2 route. The same as `chap-test-data upload`, for machines without Python.
 #
-# Usage: ./upload.sh [--dhis2] [--dry-run] [--json] datasets/<name>
+# Usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] datasets/<name>
 #
 #   --dhis2    go through the DHIS2 route ($DHIS2_URL/api/routes/$ROUTE_CODE/run/...)
 #   --dry-run  validate only (dryRun=true); nothing is imported
@@ -36,7 +36,7 @@ while [[ $# -gt 0 && $1 == --* ]]; do
   esac
   shift
 done
-dir=${1:?usage: ./upload.sh [--dhis2] [--dry-run] datasets/<name>}
+dir=${1:?usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] datasets/<name>}
 
 observations=$dir/observations.parquet
 locations=$dir/locations.parquet

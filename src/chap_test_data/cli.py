@@ -80,7 +80,7 @@ Bandwidth = Annotated[
     float | None,
     typer.Option(
         help="Send no faster than this many Mbit/s, to time the upload over a slow link (default: as fast as "
-        "possible). The time reported includes sending. It adds no delay; slow-link.sh adds both."
+        "possible). The time reported includes sending. It adds no delay; scripts/upload-slow-link.sh adds both."
     ),
 ]
 

@@ -52,22 +52,22 @@ ignores the other.
 
 ## With curl
 
-The same, without Python: `upload.sh` uploads one dataset and `check-all.sh` checks them all.
+The same, without Python: `scripts/upload-curl.sh` uploads one dataset and `scripts/check-curl.sh` checks them all.
 
 ```bash
-./upload.sh --dry-run datasets/03-facility-points
-./upload.sh --dry-run --json datasets/03-facility-points
-./upload.sh --dhis2 --dry-run datasets/03-facility-points
-./check-all.sh
-./check-all.sh --dhis2
+scripts/upload-curl.sh --dry-run datasets/03-facility-points
+scripts/upload-curl.sh --dry-run --json datasets/03-facility-points
+scripts/upload-curl.sh --dhis2 --dry-run datasets/03-facility-points
+scripts/check-curl.sh
+scripts/check-curl.sh --dhis2
 ```
 
 | Option | Script | What it does |
 | --- | --- | --- |
-| `--dry-run` | `upload.sh` | Only check; Chap stores nothing. |
+| `--dry-run` | `scripts/upload-curl.sh` | Only check; Chap stores nothing. |
 | `--dhis2` | both | Go through the DHIS2 route instead of straight to Chap. |
-| `--json` | `upload.sh` | Send the folder's `make-dataset.columns.json` to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs `--format json-columns`. |
-| `BANDWIDTH=MBIT` | `upload.sh` | An environment variable: send no faster than this many Mbit/s. |
+| `--json` | `scripts/upload-curl.sh` | Send the folder's `make-dataset.columns.json` to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs `--format json-columns`. |
+| `BANDWIDTH=MBIT` | `scripts/upload-curl.sh` | An environment variable: send no faster than this many Mbit/s. |
 
 Both read the [connection settings](getting-started.md#connection-settings) from the environment.
 Or with curl alone:

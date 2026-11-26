@@ -20,7 +20,7 @@ Chap and check its answers.
 git clone https://github.com/dhis2-chap/chap-test-data && cd chap-test-data
 uv sync
 # 16 ready-made datasets in datasets/
-./generate-datasets.sh --standard-only
+scripts/generate-ready-made.sh --standard-only
 uv run chap-test-data generate my-country --org-units 300 \
   --geometry polygon --format geojson
 # needs a running Chap; see Getting started

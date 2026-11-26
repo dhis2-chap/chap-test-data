@@ -2,9 +2,9 @@
 # Dry-run every dataset under a folder with plain curl and compare Chap's answer with its
 # expected.json. The same as `chap-test-data check`, for machines without uv.
 #
-# Usage: ./check-all.sh [--dhis2] [folder]     (default folder: datasets; settings as upload.sh)
+# Usage: scripts/check-curl.sh [--dhis2] [folder]     (default folder: datasets; settings as upload-curl.sh)
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are found
 
 args=()
 [[ ${1:-} == --dhis2 ]] && { args=(--dhis2); shift; }
@@ -15,7 +15,7 @@ printf '%-34s %-6s %-38s %s\n' dataset result expected got
 for dir in "$root"/*/; do
   dir=${dir%/}
   [[ -f $dir/expected.json ]] || continue
-  answer=$(./upload.sh ${args[@]+"${args[@]}"} --dry-run "$dir")
+  answer=$(scripts/upload-curl.sh ${args[@]+"${args[@]}"} --dry-run "$dir")
   verdict=$(python3 - "$dir/expected.json" "$answer" <<'PY'
 import json, sys
 expected = json.load(open(sys.argv[1]))

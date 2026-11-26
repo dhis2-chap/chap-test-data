@@ -6,9 +6,9 @@
 # (locations.geojson) and as the make-dataset JSON body the Modeling App sends today
 # (make-dataset.columns.json). The large datasets come last: a few GB and a few minutes.
 #
-# Usage: ./generate-datasets.sh [--standard-only]     (--standard-only skips the large ones)
+# Usage: scripts/generate-ready-made.sh [--standard-only]     (--standard-only skips the large ones)
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are found
 
 # A fixed seed, so these datasets are the same on every machine and every run.
 gen() { uv run --quiet chap-test-data generate --seed 42 "$@"; }

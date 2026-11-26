@@ -42,7 +42,7 @@ jobs:
       - name: Run the tests with coverage
         run: make coverage
       - name: Generate the standard datasets
-        run: ./generate-datasets.sh --standard-only
+        run: scripts/generate-ready-made.sh --standard-only
 
   build:
     name: Build

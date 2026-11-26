@@ -4,8 +4,8 @@ A set of datasets for testing Chap, made with one script: the usual sizes, the c
 reject or refuse, and a few very large ones.
 
 ```bash
-./generate-datasets.sh                  # all, with the large ones: minutes
-./generate-datasets.sh --standard-only  # the 16 standard ones: seconds
+scripts/generate-ready-made.sh                  # all, with the large ones: minutes
+scripts/generate-ready-made.sh --standard-only  # the 16 standard ones: seconds
 ```
 
 All of them, with the large ones, take a few GB. They are written to `datasets/` with a fixed seed (42), so they are the same on every machine.
@@ -51,5 +51,5 @@ for.
 
 `23` gets no JSON body: it would be about 5 GB.
 
-Each one is a single [`generate`](generating.md) command in `generate-datasets.sh`, so a variation
+Each one is a single [`generate`](generating.md) command in `scripts/generate-ready-made.sh`, so a variation
 of any of them is a matter of changing its options.

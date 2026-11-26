@@ -69,14 +69,14 @@ On one machine, sending costs almost nothing. In real use the upload travels fro
 browser to DHIS2 and on to Chap, often over a slow or distant connection, and then the size of
 the upload is what counts.
 
-`slow-link.sh` measures that. It sends the upload from a small Docker container whose connection
+`scripts/upload-slow-link.sh` measures that. It sends the upload from a small Docker container whose connection
 is slowed down for real: each round trip is delayed, and the speed is capped.
 
 ```bash
-./slow-link.sh --delay 100ms --rate 10mbit --dry-run datasets/03-facility-points
-./slow-link.sh --delay 100ms --rate 10mbit --dry-run \
+scripts/upload-slow-link.sh --delay 100ms --rate 10mbit --dry-run datasets/03-facility-points
+scripts/upload-slow-link.sh --delay 100ms --rate 10mbit --dry-run \
   --json datasets/03-facility-points
-./slow-link.sh --delay 300ms --rate 2mbit --dhis2 \
+scripts/upload-slow-link.sh --delay 300ms --rate 2mbit --dhis2 \
   --dry-run datasets/03-facility-points
 ```
 
@@ -84,7 +84,7 @@ is slowed down for real: each round trip is delayed, and the speed is capped.
 | --- | --- |
 | `--delay TIME` | The delay added to each round trip, such as `100ms` for a distant server. Default `100ms`. |
 | `--rate SPEED` | The upload speed, such as `10mbit` or `2mbit`. Default `10mbit`. |
-| `--dry-run`, `--dhis2`, `--json` | As for `upload.sh`: only check, go through DHIS2, or send the JSON instead of Parquet. |
+| `--dry-run`, `--dhis2`, `--json` | As for `scripts/upload-curl.sh`: only check, go through DHIS2, or send the JSON instead of Parquet. |
 
 It needs Chap running as in [Getting started](getting-started.md), and DHIS2 for `--dhis2`.
 

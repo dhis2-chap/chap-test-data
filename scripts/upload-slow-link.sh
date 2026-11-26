@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # Upload a dataset over a simulated slow link, with real latency and limited bandwidth, and report
-# the time. The upload runs with curl (upload.sh) in a small container on Chap's Docker network,
+# the time. The upload runs with curl (upload-curl.sh) in a small container on Chap's Docker network,
 # whose network interface is shaped with Linux tc netem, so TCP behaves as on a distant link.
 #
-# Usage: ./slow-link.sh [--delay 150ms] [--rate 10mbit] [upload.sh options] datasets/<name>
+# Usage: scripts/upload-slow-link.sh [--delay 150ms] [--rate 10mbit] [upload-curl.sh options] datasets/<name>
 #   --delay   added once per round trip (default 100ms)
 #   --rate    upload bandwidth (default 10mbit)
-#   other options go to upload.sh: --dhis2, --dry-run, --json
+#   other options go to upload-curl.sh: --dhis2, --dry-run, --json
 #
 # Needs Chap started with `docker compose -p chap-test-data up` (and the DHIS2 in dhis2/ for --dhis2).
-# Settings: CHAP_NETWORK (default chap-test-data_default), and upload.sh's, with Chap at
+# Settings: CHAP_NETWORK (default chap-test-data_default), and upload-curl.sh's, with Chap at
 # http://chap:8000 and DHIS2 at http://web:8080 as seen from that network.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are found
 
 delay=100ms
 rate=10mbit
@@ -34,4 +34,4 @@ docker run --rm --cap-add NET_ADMIN --network "${CHAP_NETWORK:-chap-test-data_de
     apk add --no-cache --quiet bash curl iproute2 >/dev/null &&
     tc qdisc add dev eth0 root netem delay $delay rate $rate &&
     echo 'link: $delay delay, $rate' &&
-    ./upload.sh ${args[*]} | tail -1"
+    scripts/upload-curl.sh ${args[*]} | tail -1"

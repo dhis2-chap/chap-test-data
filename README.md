@@ -21,7 +21,7 @@ Chap and check its answers.
 
 ```bash
 uv sync
-./generate-datasets.sh --standard-only        # 16 datasets in datasets/, the same every time
+scripts/generate-ready-made.sh --standard-only        # 16 datasets in datasets/, the same every time
 uv run chap-test-data generate my-country --org-units 300 --geometry polygon --format geojson
 uv run chap-test-data --help
 ```
@@ -31,7 +31,7 @@ Uploading needs a running Chap from the chap-core branch `feat/dataset-parquet-u
 ```bash
 (cd ../chap-core && docker compose -p chap-test-data up -d --build)
 uv run chap-test-data check                   # every dataset against its expected.json
-./check-all.sh                                # the same with curl
+scripts/check-curl.sh                                # the same with curl
 ```
 
 ## Developing
