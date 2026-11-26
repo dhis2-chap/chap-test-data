@@ -191,9 +191,3 @@ def matches(expected: Expected, answer: Answer) -> bool:
         rejected = body.get("rejected", [])
         return bool(body.get("importedCount") == expected.imported_count and len(rejected) == expected.rejected)
     return (expected.detail or "") in answer.detail
-
-
-def summary(answer: Answer) -> str:
-    if answer.http == 200 and isinstance(answer.body, dict):
-        return f"200 imported={answer.body.get('importedCount')} rejected={len(answer.body.get('rejected', []))}"
-    return f"{answer.http} {answer.detail[:70]}"

@@ -47,8 +47,3 @@ class Expected(BaseModel):
     def write(self, directory: Path) -> None:
         text = self.model_dump_json(by_alias=True, exclude_none=True, indent=2)
         (directory / "expected.json").write_text(text + "\n")
-
-    def summary(self) -> str:
-        if self.http == 200:
-            return f"200 imported={self.imported_count} rejected={self.rejected}"
-        return f"{self.http} ...{self.detail or ''}..."

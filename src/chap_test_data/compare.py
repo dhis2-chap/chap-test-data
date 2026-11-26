@@ -13,21 +13,66 @@ from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from chap_test_data.client import Answer, Target, post_make_dataset, upload_files, wait_for_job
 from chap_test_data.export import export
 
 FORMATS = ("parquet", "json-columns", "json-rows")
 
 
-def header(target: Target, dry_run: bool) -> str:
+COLUMNS = (
+    "Dataset",
+    "Format",
+    "Body",
+    "Body vs Parquet",
+    "HTTP",
+    "Request",
+    "Request vs Parquet",
+    "Worker",
+    "Imported",
+)
+
+
+class CompareRow(BaseModel):
+    """One upload of one dataset in one format."""
+
+    dataset: str
+    form: str
+    megabytes: float
+    size_x: str
+    http: int
+    seconds: float
+    time_x: str
+    worker: str
+    outcome: str
+
+    def cells(self) -> list[str]:
+        return [
+            self.dataset,
+            self.form,
+            f"{self.megabytes:.2f} MB",
+            self.size_x,
+            str(self.http),
+            f"{self.seconds:.2f} s",
+            self.time_x,
+            self.worker,
+            self.outcome,
+        ]
+
+    def markdown(self) -> str:
+        return "| " + " | ".join(self.cells()) + " |"
+
+
+def title(target: Target, dry_run: bool) -> str:
     via = "through DHIS2" if target.dhis2 else "direct"
     mode = "dry run" if dry_run else "import"
     link = f", sent at {target.bandwidth:g} Mbit/s" if target.bandwidth else ""
-    return (
-        f"\n### {datetime.now():%Y-%m-%d %H:%M}, {via}, {mode}{link}\n\n"
-        "| Dataset | Format | Body | Body vs Parquet | HTTP | Request | Request vs Parquet | Worker | Imported |\n"
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"
-    )
+    return f"{datetime.now():%Y-%m-%d %H:%M}, {via}, {mode}{link}"
+
+
+def markdown_header(title_text: str) -> str:
+    return f"\n### {title_text}\n\n| " + " | ".join(COLUMNS) + " |\n|" + " --- |" * len(COLUMNS)
 
 
 def compare_dataset(
@@ -38,8 +83,8 @@ def compare_dataset(
     wait: bool,
     repeat: int,
     formats: list[str] | None = None,
-) -> Iterator[str]:
-    """Upload one dataset in each format (default all three); yields one table row per format.
+) -> Iterator[CompareRow]:
+    """Upload one dataset in each format (default all three); yields one row per format.
 
     The ratios compare with Parquet, so they are filled in only when Parquet is among the formats.
     """
@@ -61,12 +106,17 @@ def compare_dataset(
             stored = wait_for_job(target, job)
             worker = f"{stored.seconds:.1f} s" if stored.status == "SUCCESS" and stored.seconds else stored.status
         imported = last.body.get("importedCount") if isinstance(last.body, dict) else None
-        outcome = imported if last.http == 200 else last.detail[:120]
+        outcome = str(imported) if last.http == 200 else last.detail[:120]
         if fmt == "parquet":
             baseline = {"bytes": last.bytes, "seconds": seconds}
-        size_x = f"{last.bytes / baseline['bytes']:.1f}x" if baseline.get("bytes") else ""
-        time_x = f"{seconds / baseline['seconds']:.1f}x" if baseline.get("seconds") else ""
-        yield (
-            f"| {directory.name} | {fmt} | {last.bytes / 1e6:.2f} MB | {size_x} | {last.http} | {seconds:.2f} s "
-            f"| {time_x} | {worker} | {outcome} |"
+        yield CompareRow(
+            dataset=directory.name,
+            form=fmt,
+            megabytes=last.bytes / 1e6,
+            size_x=f"{last.bytes / baseline['bytes']:.1f}x" if baseline.get("bytes") else "",
+            http=last.http,
+            seconds=seconds,
+            time_x=f"{seconds / baseline['seconds']:.1f}x" if baseline.get("seconds") else "",
+            worker=worker,
+            outcome=outcome,
         )

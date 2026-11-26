@@ -1,6 +1,5 @@
 """The chap-test-data command line."""
 
-import json
 import sys
 import tempfile
 from enum import StrEnum
@@ -8,10 +7,12 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.table import Table
 
 from chap_test_data import compare as comparison
+from chap_test_data import ui
 from chap_test_data.checks import run_checks
-from chap_test_data.client import Target, matches, summary, upload_files, wait_for_job
+from chap_test_data.client import Target, matches, upload_files, wait_for_job
 from chap_test_data.export import export
 from chap_test_data.files import Expected
 from chap_test_data.generate import DatasetSpec, build
@@ -365,11 +366,7 @@ def generate(
             export(directory, fmt)
     except ValueError as e:
         raise typer.BadParameter(str(e)) from e
-    sizes = ", ".join(
-        f"{p.name} {p.stat().st_size / 1e6:,.2f} MB" for p in sorted(directory.iterdir()) if p.suffix != ".json"
-    )
-    answer = f"{expected.http} {expected.detail}" if expected.detail else expected.summary()
-    typer.echo(f"{name:<34} {expected.rows or 0:>12,} rows  {sizes}  -> {answer}  (seed {expected.seed})")
+    ui.show_generated(name, directory, expected)
 
 
 @app.command()
@@ -381,22 +378,22 @@ def upload(
     dry_run: DryRun = False,
     bandwidth: Bandwidth = None,
     wait: Annotated[
-        bool, typer.Option(help="After an import, wait until Chap has stored the dataset and say how it went.")
+        bool, typer.Option(help="After an import, wait until Chap has stored the dataset and print its id.")
     ] = False,
+    raw: Annotated[bool, typer.Option("--raw", help="Also print Chap's answer as it came, in JSON.")] = False,
 ) -> None:
-    """Upload one dataset folder."""
-    answer = upload_files(target(dhis2, bandwidth), directory, dry_run)
-    typer.echo(json.dumps(answer.body, indent=2) if not isinstance(answer.body, str) else answer.body)
-    typer.echo(f"HTTP {answer.http} in {answer.seconds:.2f} s, {answer.bytes / 1e6:,.2f} MB sent")
+    """Upload one dataset folder, and say what Chap made of it."""
+    where = "through DHIS2" if dhis2 else "to Chap"
+    with ui.status_console.status(f"Uploading {directory.name} {where}{' (dry run)' if dry_run else ''}"):
+        answer = upload_files(target(dhis2, bandwidth), directory, dry_run)
+    ui.show_answer(directory, answer, dry_run, raw)
     job = answer.body.get("id") if isinstance(answer.body, dict) else None
-    if wait and job and not dry_run:
-        outcome = wait_for_job(State.target, job)
-        took = f" in {outcome.seconds:.1f} s" if outcome.seconds is not None else ""
-        typer.echo(f"job {job}: {outcome.status}{took}")
-        if outcome.dataset_id:
-            typer.echo(f"dataset id: {outcome.dataset_id}")
-        elif outcome.error:
-            typer.echo(f"error: {outcome.error}")
+    if wait and job and not dry_run and answer.http == 200:
+        with ui.status_console.status("Waiting for Chap to store the dataset"):
+            outcome = wait_for_job(State.target, job)
+        ui.show_job(outcome)
+        if outcome.status != "SUCCESS":
+            raise typer.Exit(1)
     if answer.http != 200:
         raise typer.Exit(1)
 
@@ -407,18 +404,27 @@ def check(
     dhis2: Dhis2 = False,
 ) -> None:
     """Dry-run every dataset under ROOT and compare Chap's answer with its expected.json."""
+    table = Table("Dataset", "Result", "Expected", "Chap answered")
     failed = 0
-    typer.echo(f"{'dataset':<34} {'result':<6} {'expected':<38} got")
-    for directory in sorted(p for p in root.iterdir() if (p / "expected.json").exists()):
-        expected = Expected.read(directory)
-        answer = upload_files(target(dhis2), directory, dry_run=True)
-        ok = matches(expected, answer)
-        failed += not ok
-        result = "ok" if ok else "FAIL"
-        typer.echo(f"{directory.name:<34} {result:<6} {expected.summary():<38} {summary(answer)}")
-    typer.echo("\nall datasets gave the expected answer" if not failed else f"\n{failed} dataset(s) differ")
+    directories = sorted(p for p in root.iterdir() if (p / "expected.json").exists())
+    with ui.status_console.status("Checking") as status:
+        for directory in directories:
+            status.update(f"Checking {directory.name}")
+            expected = Expected.read(directory)
+            answer = upload_files(target(dhis2), directory, dry_run=True)
+            ok = matches(expected, answer)
+            failed += not ok
+            table.add_row(
+                directory.name,
+                "[green]ok[/]" if ok else "[bold red]FAIL[/]",
+                ui.describe_expected(expected),
+                ui.describe_answer(answer),
+            )
+    ui.console.print(table)
     if failed:
+        ui.console.print(f"[bold red]{failed} of {len(directories)} datasets gave another answer[/]")
         raise typer.Exit(1)
+    ui.console.print(f"[bold green]All {len(directories)} datasets gave the expected answer[/]")
 
 
 @app.command()
@@ -458,16 +464,21 @@ def compare(
     if not names:
         raise typer.BadParameter("name datasets or pass --all")
     chosen: list[str] = [f.value for f in formats] if formats else [str(f) for f in comparison.FORMATS]
-    lines = [comparison.header(target(dhis2, bandwidth), dry_run)]
-    typer.echo(lines[0])
+    title = comparison.title(target(dhis2, bandwidth), dry_run)
+    ui.console.print(f"[bold]{title}[/]")
+    rows = []
     with tempfile.TemporaryDirectory() as tmp:
         for name in names:
-            for line in comparison.compare_dataset(State.target, root / name, Path(tmp), dry_run, wait, repeat, chosen):
-                lines.append(line)
-                typer.echo(line)
+            with ui.status_console.status(f"Uploading {name} in {len(chosen)} forms"):
+                found = list(
+                    comparison.compare_dataset(State.target, root / name, Path(tmp), dry_run, wait, repeat, chosen)
+                )
+            rows += found
+            ui.show_comparison(name, found)
     results.parent.mkdir(parents=True, exist_ok=True)
     with results.open("a") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write("\n".join([comparison.markdown_header(title), *(row.markdown() for row in rows)]) + "\n")
+    ui.console.print(f"[dim]Added to {results}[/]")
 
 
 @app.command("time-checks")
@@ -485,9 +496,14 @@ def time_checks(
     whole process.
     """
     for directory in datasets:
-        rows, results, peak_mb = run_checks(directory, memory_limit)
-        typer.echo(f"{directory.name}: {rows:,} rows")
+        with ui.status_console.status(f"Checking {directory.name}"):
+            rows, results, peak_mb = run_checks(directory, memory_limit)
+        table = Table(title=f"{directory.name}: {rows:,} rows", title_justify="left")
+        table.add_column("Check")
+        table.add_column("Time", justify="right")
+        table.add_column("Found", justify="right")
         for result in results:
-            typer.echo(f"  {result.name:<40} {result.seconds:7.2f} s  ({result.found:,} found)")
+            table.add_row(result.name, f"{result.seconds:.2f} s", f"{result.found:,}")
         total = sum(r.seconds for r in results)
-        typer.echo(f"  {'all checks':<40} {total:7.2f} s, peak memory {peak_mb:,.0f} MB")
+        table.add_row("[bold]all checks[/]", f"[bold]{total:.2f} s[/]", f"[dim]{peak_mb:,.0f} MB memory at most[/]")
+        ui.console.print(table)
