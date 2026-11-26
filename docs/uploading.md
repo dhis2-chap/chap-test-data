@@ -19,7 +19,7 @@ if it refuses the files.
 | Option | What it does |
 | --- | --- |
 | `--dry-run` | Only check: Chap answers what it would import and reject, and stores nothing. |
-| `--wait` | After a real import, wait until Chap has stored the dataset, and say how it went. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years. |
+| `--wait` | After a real import, wait until Chap has stored the dataset, then print its id (`dataset id: 42`), or the error if storing failed. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years. |
 | `--dhis2` | Send the upload through the DHIS2 route, as the Modeling App does, instead of straight to Chap. |
 | `--bandwidth MBIT` | Send no faster than this many Mbit/s, to time the upload over a slow link. The time printed includes the sending. See [Comparing with JSON](comparing.md) for a slow link with delay as well. |
 
@@ -66,11 +66,12 @@ scripts/check-curl.sh --dhis2
 | Option | Script | What it does |
 | --- | --- | --- |
 | `--dry-run` | `scripts/upload-curl.sh` | Only check; Chap stores nothing. |
+| `--wait` | `scripts/upload-curl.sh` | After a real import, wait until Chap has stored the dataset, then print its id. |
 | `--dhis2` | both | Go through the DHIS2 route instead of straight to Chap. |
 | `--json` | `scripts/upload-curl.sh` | Send the folder's `make-dataset.columns.json` to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs `--format json-columns`. |
 | `BANDWIDTH=MBIT` | `scripts/upload-curl.sh` | An environment variable: send no faster than this many Mbit/s. |
 
-Both read the [connection settings](getting-started.md#connection-settings) from the environment.
+Both read the [connection settings](getting-started.md#connection-settings) from the environment, and print each command they run, with the password and token hidden.
 Or with curl alone:
 
 ```bash
