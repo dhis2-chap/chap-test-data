@@ -189,6 +189,22 @@ def generate(
             rich_help_panel=LOCATIONS,
         ),
     ] = 800,
+    districts_per_region: Annotated[
+        int,
+        typer.Option(
+            help="About how many districts make up a region (level 2) in hierarchy.geojson. Regions group "
+            "neighbouring districts, so their sizes vary around this.",
+            rich_help_panel=LOCATIONS,
+        ),
+    ] = 10,
+    facilities_per_district: Annotated[
+        int,
+        typer.Option(
+            help="How many facilities a district (level 3) has on average, with --geometry point. Districts differ: "
+            "most have between half and twice as many.",
+            rich_help_panel=LOCATIONS,
+        ),
+    ] = 50,
     geojson: Annotated[
         bool,
         typer.Option(
@@ -314,6 +330,8 @@ def generate(
         column_names=column or [],
         geometry=geometry.value,
         corners=corners,
+        districts_per_region=districts_per_region,
+        facilities_per_district=facilities_per_district,
         missing=missing,
         seed=seed,
         about=about,

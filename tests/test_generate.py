@@ -171,7 +171,13 @@ def test_too_many_rows_expect_a_422(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize(
     "options",
-    [{"column_names": ["location"]}, {"column_names": ["a", "a"]}, {"geometry": "polygon", "corners": 2}],
+    [
+        {"column_names": ["location"]},
+        {"column_names": ["a", "a"]},
+        {"geometry": "polygon", "corners": 2},
+        {"districts_per_region": 0},
+        {"facilities_per_district": 0},
+    ],
 )
 def test_impossible_settings_are_refused(tmp_path, options):
     with pytest.raises(ValueError):
@@ -228,3 +234,12 @@ def test_polygons_follow_the_geojson_right_hand_rule(tmp_path):
     polygons = gpd.read_parquet(directory / "locations.parquet").geometry.to_numpy()
     assert all(shapely.is_ccw(p.exterior) for p in polygons)
     assert all(shapely.is_ccw(p.exterior) for p in read_hierarchy(directory).geometry)
+
+
+def test_the_hierarchy_sizes_can_be_chosen(tmp_path):
+    directory, _ = generate(tmp_path, org_units=100, geometry="polygon", corners=16, districts_per_region=25)
+    assert (read_hierarchy(directory)["level"] == 2).sum() == 4
+    directory, _ = generate(tmp_path / "facilities", org_units=300, facilities_per_district=100, districts_per_region=1)
+    hierarchy = read_hierarchy(directory)
+    assert (hierarchy["level"] == 3).sum() == 3 and (hierarchy["level"] == 2).sum() == 3
+    assert_tree(gpd.read_parquet(directory / "locations.parquet"), hierarchy, [1, 2, 3])

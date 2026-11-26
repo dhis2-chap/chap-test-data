@@ -62,6 +62,8 @@ class DatasetSpec(BaseModel):
     column_names: list[str] = []
     geometry: str = "point"
     corners: int = 800
+    districts_per_region: int = 10
+    facilities_per_district: int = 50
     missing: float = 0.002
     seed: int | None = None  # None: a random seed, recorded in expected.json
     about: str = ""
@@ -319,7 +321,7 @@ def facility_points(
     """
     district_count = max(1, int(np.ceil(n / per_district)))
     district_sites, districts = jagged_areas(district_count, 64, rng)
-    district = np.arange(n) // per_district
+    district = np.repeat(np.arange(district_count), _uneven_counts(n, district_count, rng))
     bounds = shapely.bounds(districts)
     x = np.empty(n)
     y = np.empty(n)
@@ -383,6 +385,21 @@ def regions(sites: np.ndarray, areas: np.ndarray, per_region: int = 10) -> tuple
     return region, outlines
 
 
+def _uneven_counts(total: int, groups: int, rng: np.random.Generator) -> np.ndarray:
+    """Split total into groups of uneven size, as real districts have more or fewer facilities.
+
+    Sizes vary around the average by a lognormal factor (most within half to twice the average), every
+    group gets at least one when there are enough to go round, and the sizes add up to total.
+    """
+    weights = rng.lognormal(0.0, 0.45, groups)
+    floor = 1 if total >= groups else 0
+    share = weights / weights.sum() * (total - floor * groups)
+    counts = np.floor(share).astype(int) + floor
+    remainder = total - counts.sum()
+    counts[np.argsort(share - np.floor(share))[::-1][:remainder]] += 1  # the largest fractions round up
+    return counts
+
+
 def _inside(polygon: Any, count: int, bounds: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """count random points inside polygon, by drawing in its bounding box and keeping those inside."""
     found = np.empty((0, 2))
@@ -392,13 +409,20 @@ def _inside(polygon: Any, count: int, bounds: np.ndarray, rng: np.random.Generat
     return found[:count]
 
 
-def locations(ids: np.ndarray, corners: int | None, seed: int) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+def locations(
+    ids: np.ndarray,
+    corners: int | None,
+    seed: int,
+    districts_per_region: int = 10,
+    facilities_per_district: int = 50,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Org units near Nairobi on a country-like map, about 0.8 degrees apart (as chapkit's generator).
 
     With corners, each org unit is a district (level 3): an area with a jagged border of that many
     points (see jagged_areas). Without, each is a facility (level 4), a point clustered around towns
-    inside districts of about 50 facilities (see facility_points). Above them, as in DHIS2, regions
-    (level 2) group about 10 neighbouring districts and the country (level 1) holds them all.
+    inside districts of about `facilities_per_district` facilities (see facility_points). Above them, as
+    in DHIS2, regions (level 2) group about `districts_per_region` neighbouring districts (see regions)
+    and the country (level 1) holds them all.
 
     Returns the org units, each with the id of the area it lies in as `parent`, and the hierarchy
     above them: every area with its `name`, `level` and `parent`, from the country down.
@@ -412,10 +436,10 @@ def locations(ids: np.ndarray, corners: int | None, seed: int) -> tuple[gpd.GeoD
         districts = geometry
         level = 3
     else:
-        points, district_of, district_sites, districts = facility_points(n, rng)
+        points, district_of, district_sites, districts = facility_points(n, rng, per_district=facilities_per_district)
         geometry = shapely.points(points)
         level = 4
-    region_of, region_outlines = regions(district_sites, districts)
+    region_of, region_outlines = regions(district_sites, districts, per_region=districts_per_region)
     country = shapely.union_all(region_outlines)
     # GeoJSON (RFC 7946) wants outer rings counter-clockwise, and GeoParquet recommends it.
     region_outlines = shapely.orient_polygons(region_outlines, exterior_cw=False)
@@ -489,6 +513,8 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         raise ValueError("column names must be unique and not location or time_period")
     if spec.covariate_gaps and len(names) < 2:
         raise ValueError("covariate gaps go into the last covariate, so there must be at least 2 columns")
+    if spec.districts_per_region < 1 or spec.facilities_per_district < 1:
+        raise ValueError("--districts-per-region and --facilities-per-district must be at least 1")
     if spec.geometry == "polygon" and spec.corners < 3:
         raise ValueError("a polygon needs at least 3 points")
     if spec.covariate_gaps + spec.drop_locations > spec.org_units:
@@ -526,7 +552,13 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         assert writer is not None
         writer.close()
 
-    frame, hierarchy = locations(ids, spec.corners if spec.geometry == "polygon" else None, seed)
+    frame, hierarchy = locations(
+        ids,
+        spec.corners if spec.geometry == "polygon" else None,
+        seed,
+        districts_per_region=spec.districts_per_region,
+        facilities_per_district=spec.facilities_per_district,
+    )
     # The areas above the org units, country down, so the org unit tree can be seen and checked.
     (directory / "hierarchy.geojson").write_text(hierarchy.set_index("location").to_json(drop_id=False))
     if spec.drop_locations:

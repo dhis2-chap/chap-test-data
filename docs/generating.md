@@ -45,6 +45,8 @@ For a ready-made set to start from, see [Ready-made datasets](ready-made.md).
 | `--geometry point` | default | Each org unit is a point, like a health facility. |
 | `--geometry polygon` | | Each org unit is an area, like a district, with a jagged border shared with its neighbours. |
 | `--corners N` | 800 | How many points each area's border has, with `--geometry polygon`. More points draw a more detailed border and make the file larger. |
+| `--districts-per-region N` | 10 | About how many districts make up a region (level 2) in `hierarchy.geojson`. Regions group neighbouring districts, so their sizes vary around this: with 1,000 districts you get 100 regions of 5 to 17 districts. |
+| `--facilities-per-district N` | 50 | How many facilities a district (level 3) has on average, with `--geometry point`. Districts differ, as real ones do: with 1,500 facilities you get 30 districts of 21 to 134 facilities. |
 | `--geojson` | | Write the locations only as `locations.geojson`, not as `locations.parquet`. Use it to test a GeoJSON upload. |
 
 ### Other formats
@@ -142,8 +144,8 @@ As in DHIS2, the org units sit in a tree of areas, written to `hierarchy.geojson
 | Level | Area | With `--geometry polygon` | With `--geometry point` |
 | --- | --- | --- | --- |
 | 1 | Country | in `hierarchy.geojson` | in `hierarchy.geojson` |
-| 2 | Regions, about 10 districts each | in `hierarchy.geojson` | in `hierarchy.geojson` |
-| 3 | Districts | the org units, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each |
+| 2 | Regions, about 10 districts each (`--districts-per-region`) | in `hierarchy.geojson` | in `hierarchy.geojson` |
+| 3 | Districts | the org units, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each (`--facilities-per-district`) |
 | 4 | Facilities | | the org units, in `locations.*` |
 
 Every area and org unit has a `level`, and a `parent`: the id of the area one level up that it
