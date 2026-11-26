@@ -423,6 +423,100 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Your own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#size-and-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size and time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#value-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#settings-in-the-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings in the file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#org-units-chap-must-reject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Org units Chap must reject
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files-chap-must-refuse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Chap must refuse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducing-a-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing a dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -648,6 +742,100 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Your own">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#size-and-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size and time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#value-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Value columns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#locations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Locations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#settings-in-the-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings in the file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#org-units-chap-must-reject" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Org units Chap must reject
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files-chap-must-refuse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files Chap must refuse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducing-a-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing a dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -848,53 +1036,231 @@ as Parquet only.</p>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>gaps<span class="w"> </span>--org-units<span class="w"> </span><span class="m">50</span><span class="w"> </span>--covariate-gaps<span class="w"> </span><span class="m">5</span><span class="w"> </span>--drop-locations<span class="w"> </span><span class="m">2</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>--help
 </code></pre></div>
+<p>The name is the folder the dataset is written to, under <code>datasets/</code> (change it with <code>--out</code>).
+All options are optional.</p>
+<h3 id="size-and-time">Size and time<a class="headerlink" href="#size-and-time" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Options</th>
-<th>What they set</th>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--org-units</code>, <code>--years</code> or <code>--periods</code>, <code>--period weekly</code> or <code>monthly</code>, <code>--start-year</code></td>
-<td>The size</td>
+<td><code>--org-units N</code></td>
+<td>100</td>
+<td>How many org units (districts or facilities) the dataset has.</td>
 </tr>
+<tr>
+<td><code>--period weekly</code> or <code>--period monthly</code></td>
+<td>weekly</td>
+<td>How often there is a value: once a week (periods like <code>2016W01</code>) or once a month (<code>201601</code>).</td>
+</tr>
+<tr>
+<td><code>--years N</code></td>
+<td>10</td>
+<td>How many years of data, starting in <code>--start-year</code>.</td>
+</tr>
+<tr>
+<td><code>--periods N</code></td>
+<td></td>
+<td>How many weeks or months exactly, instead of <code>--years</code>. <code>--periods 36 --period monthly</code> is 3 years.</td>
+</tr>
+<tr>
+<td><code>--start-year YEAR</code></td>
+<td>2016</td>
+<td>The year the data starts.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="value-columns">Value columns<a class="headerlink" href="#value-columns" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td><code>--columns N</code></td>
-<td>The first N of disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation (default 10)</td>
+<td>10</td>
+<td>How many value columns, taken in this order: disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation. Above 10 you get covariate_11, covariate_12 and so on.</td>
 </tr>
 <tr>
-<td><code>--column NAME</code> (repeatable)</td>
-<td>Your own column names instead; the first is the target</td>
+<td><code>--column NAME</code></td>
+<td></td>
+<td>Name the value columns yourself, one <code>--column</code> per column, in order. The first is the target (what models predict). Names from the list above get realistic values; other names get a seasonal covariate between 0 and 100. Replaces <code>--columns</code>.</td>
 </tr>
 <tr>
-<td><code>--missing</code></td>
-<td>The share of missing target values (default 0.002)</td>
+<td><code>--missing SHARE</code></td>
+<td>0.002</td>
+<td>The share of target values left empty, as real reporting has gaps. 0.002 is 2 in every 1,000.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="locations">Locations<a class="headerlink" href="#locations" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--geometry point</code></td>
+<td>default</td>
+<td>Each org unit is a point, like a health facility.</td>
 </tr>
 <tr>
-<td><code>--geometry point</code> or <code>polygon</code>, <code>--corners N</code></td>
-<td>Facility points (default) or district areas with N points per border (default 800)</td>
+<td><code>--geometry polygon</code></td>
+<td></td>
+<td>Each org unit is an area, like a district, with a jagged border shared with its neighbours.</td>
 </tr>
 <tr>
-<td><code>--format</code> with <code>csv</code>, <code>geojson</code>, <code>json-columns</code> or <code>json-rows</code> (repeatable)</td>
-<td>Other formats besides Parquet</td>
+<td><code>--corners N</code></td>
+<td>800</td>
+<td>How many points each area's border has, with <code>--geometry polygon</code>. More points draw a more detailed border and make the file larger.</td>
 </tr>
 <tr>
-<td><code>--masked START:END</code>, <code>--no-metadata</code>, <code>--spec-version</code></td>
-<td>The settings in the file's metadata</td>
+<td><code>--geojson</code></td>
+<td></td>
+<td>Write the locations only as <code>locations.geojson</code>, not as <code>locations.parquet</code>. Use it to test a GeoJSON upload.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="other-formats">Other formats<a class="headerlink" href="#other-formats" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--format FORMAT</code></td>
+<td></td>
+<td>Also write the dataset in another format; repeat for several. <code>csv</code>, <code>geojson</code>, <code>json-columns</code> or <code>json-rows</code>; see <a href="#formats">Formats</a>. Parquet is always written.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="settings-in-the-file">Settings in the file<a class="headerlink" href="#settings-in-the-file" title="Permanent link">&para;</a></h3>
+<p>These go into the observations file's <code>chap.*</code> metadata, which Chap reads as the dataset's
+settings.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--masked START:END</code></td>
+<td></td>
+<td>Hide the target between two periods, for example <code>--masked 201801:201803</code>, as a dataset with known bad data would. Repeat for several ranges.</td>
 </tr>
 <tr>
-<td><code>--covariate-gaps N</code>, <code>--drop-locations N</code></td>
-<td>Org units Chap must reject</td>
+<td><code>--no-metadata</code></td>
+<td></td>
+<td>Write no <code>chap.*</code> settings. Chap then names the dataset after the file and uses its defaults.</td>
 </tr>
 <tr>
-<td><code>--duplicate-rows N</code>, <code>--text-column NAME</code>, <code>--drop-time-period</code>, <code>--not-parquet</code></td>
-<td>Files Chap must refuse</td>
+<td><code>--spec-version VERSION</code></td>
+<td>1</td>
+<td>The file format version written to the file. Chap only reads version 1, so anything else is refused.</td>
 </tr>
+<tr>
+<td><code>--about TEXT</code></td>
+<td></td>
+<td>A description stored in <code>expected.json</code>. Without it, one is made from the settings.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="org-units-chap-must-reject">Org units Chap must reject<a class="headerlink" href="#org-units-chap-must-reject" title="Permanent link">&para;</a></h3>
+<p>Chap accepts the dataset but leaves these org units out, and says which and why.
+<code>expected.json</code> counts them as rejected.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--covariate-gaps N</code></td>
+<td>0</td>
+<td>The first N org units each miss one value in the last value column. Chap rejects an org unit with a gap in a covariate.</td>
+</tr>
+<tr>
+<td><code>--drop-locations N</code></td>
+<td>0</td>
+<td>The last N org units have data but no location in the locations file. Chap rejects an org unit it cannot place on the map.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="files-chap-must-refuse">Files Chap must refuse<a class="headerlink" href="#files-chap-must-refuse" title="Permanent link">&para;</a></h3>
+<p>Chap refuses the whole upload with an error (HTTP 422). <code>expected.json</code> holds the error to expect.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--duplicate-rows N</code></td>
+<td>0</td>
+<td>The first N rows are written twice, so an org unit has two values for the same period.</td>
+</tr>
+<tr>
+<td><code>--text-column NAME</code></td>
+<td></td>
+<td>Adds a column with this name holding text instead of numbers.</td>
+</tr>
+<tr>
+<td><code>--drop-time-period</code></td>
+<td></td>
+<td>Leaves out the <code>time_period</code> column, so Chap cannot tell when the values are from.</td>
+</tr>
+<tr>
+<td><code>--not-parquet</code></td>
+<td></td>
+<td>Writes a CSV file named <code>observations.parquet</code>, as a wrongly saved file would be.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="reproducing-a-dataset">Reproducing a dataset<a class="headerlink" href="#reproducing-a-dataset" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td><code>--seed N</code></td>
-<td>The same files every time; without it the seed is random and recorded in <code>expected.json</code></td>
+<td>random</td>
+<td>The same seed and options always give the same files. Without it a random seed is used, and <code>expected.json</code> records it, so you can make the same dataset again.</td>
+</tr>
+<tr>
+<td><code>--out FOLDER</code></td>
+<td><code>datasets</code></td>
+<td>The folder the dataset folder is written in.</td>
 </tr>
 </tbody>
 </table>
@@ -981,9 +1347,6 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
   make up. Every org unit lies inside the parent its <code>parent</code> column names.</li>
 <li>Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.</li>
 </ul>
-<p>All GeoJSON files were checked in <a href="https://geojson.io">geojson.io</a> on 2026-11-26: imported, exported
-again and compared, every file kept its features, ids, properties and coordinates unchanged, and
-with the parents on the same map every org unit lay inside its own parent.</p>
 
 
 
