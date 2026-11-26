@@ -1,3 +1,20 @@
+/* A dark blue theme. */
+:root {
+  --md-primary-fg-color: #1d3f6e;
+  --md-primary-fg-color--light: #2f5a94;
+  --md-primary-fg-color--dark: #142d4f;
+  --md-accent-fg-color: #2f6fc4;
+  --md-accent-fg-color--transparent: rgba(47, 111, 196, 0.1);
+}
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #1f5aa6;
+}
+[data-md-color-scheme="slate"] {
+  --md-typeset-a-color: #7fb0f0;
+  --md-accent-fg-color: #7fb0f0;
+  --md-accent-fg-color--transparent: rgba(127, 176, 240, 0.1);
+}
+
 /* Code in tables (file names, options, column names) stays on one line. A table too wide for the
    screen scrolls sideways inside its own frame, not the page. */
 .md-typeset table:not([class]) code {
