@@ -491,10 +491,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#one-dataset" class="md-nav__link">
+  <a href="#upload-one-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One dataset
+        Upload one dataset
       
     </span>
   </a>
@@ -502,10 +502,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#every-dataset-against-its-expected-answer" class="md-nav__link">
+  <a href="#check-every-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Every dataset against its expected answer
+        Check every dataset
       
     </span>
   </a>
@@ -513,10 +513,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#through-a-dhis2-route" class="md-nav__link">
+  <a href="#through-dhis2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Through a DHIS2 route
+        Through DHIS2
       
     </span>
   </a>
@@ -535,10 +535,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#results" class="md-nav__link">
+  <a href="#how-long-it-takes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Results
+        How long it takes
       
     </span>
   </a>
@@ -661,10 +661,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#one-dataset" class="md-nav__link">
+  <a href="#upload-one-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One dataset
+        Upload one dataset
       
     </span>
   </a>
@@ -672,10 +672,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#every-dataset-against-its-expected-answer" class="md-nav__link">
+  <a href="#check-every-dataset" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Every dataset against its expected answer
+        Check every dataset
       
     </span>
   </a>
@@ -683,10 +683,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#through-a-dhis2-route" class="md-nav__link">
+  <a href="#through-dhis2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Through a DHIS2 route
+        Through DHIS2
       
     </span>
   </a>
@@ -705,10 +705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#results" class="md-nav__link">
+  <a href="#how-long-it-takes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Results
+        How long it takes
       
     </span>
   </a>
@@ -736,50 +736,134 @@
 
 
 <h1 id="uploading-and-checking">Uploading and checking<a class="headerlink" href="#uploading-and-checking" title="Permanent link">&para;</a></h1>
-<p>Start Chap first (see <a href="../getting-started/">Getting started</a>).</p>
-<h2 id="one-dataset">One dataset<a class="headerlink" href="#one-dataset" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>upload<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points<span class="w">   </span><span class="c1"># validate only</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>upload<span class="w"> </span>--wait<span class="w"> </span>datasets/03-facility-points<span class="w">      </span><span class="c1"># import, and wait for the job</span>
+<p>Start Chap first, and DHIS2 too if you want to go through it (see
+<a href="../getting-started/">Getting started</a>).</p>
+<h2 id="upload-one-dataset">Upload one dataset<a class="headerlink" href="#upload-one-dataset" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># only check</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>upload<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># import, and wait until stored</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>upload<span class="w"> </span>--wait<span class="w"> </span>datasets/03-facility-points
 </code></pre></div>
-<h2 id="every-dataset-against-its-expected-answer">Every dataset against its expected answer<a class="headerlink" href="#every-dataset-against-its-expected-answer" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check<span class="w">                    </span><span class="c1"># every folder in datasets/</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check<span class="w"> </span>--dhis2<span class="w">            </span><span class="c1"># the same through the DHIS2 route</span>
+<p><code>upload</code> sends the dataset folder's <code>observations.parquet</code> and its locations file to Chap, and
+prints Chap's answer: how many org units it will import, which it rejects and why, or the error
+if it refuses the files.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Only check: Chap answers what it would import and reject, and stores nothing.</td>
+</tr>
+<tr>
+<td><code>--wait</code></td>
+<td>After a real import, wait until Chap has stored the dataset, and say how it went. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years.</td>
+</tr>
+<tr>
+<td><code>--dhis2</code></td>
+<td>Send the upload through the DHIS2 route, as the Modeling App does, instead of straight to Chap.</td>
+</tr>
+<tr>
+<td><code>--bandwidth MBIT</code></td>
+<td>Send no faster than this many Mbit/s, to time the upload over a slow link. The time printed includes the sending. See <a href="../comparing/">Comparing with JSON</a> for a slow link with delay as well.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="check-every-dataset">Check every dataset<a class="headerlink" href="#check-every-dataset" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># every dataset folder in datasets/</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># the same through the DHIS2 route</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check<span class="w"> </span>--dhis2
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># the dataset folders in another folder</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check<span class="w"> </span>my-datasets/
 </code></pre></div>
-<p><code>check</code> dry-runs each dataset and compares Chap's answer with the folder's <code>expected.json</code>:
-how many org units it imports and rejects, or which error it gives.</p>
-<h2 id="through-a-dhis2-route">Through a DHIS2 route<a class="headerlink" href="#through-a-dhis2-route" title="Permanent link">&para;</a></h2>
-<p><code>--dhis2</code> sends the upload to DHIS2's route API, which forwards it to Chap, as the Modeling App
-does. DHIS2 2.42.3 and later forward each file twice
-(<a href="https://dhis2.atlassian.net/browse/DHIS2-22596">DHIS2-22596</a>); Chap ignores the extra copies,
-so the result is the same as without DHIS2. Tested on DHIS2 2.41.11, 2.42.7.1 and 2.43.2.1.</p>
+<p><code>check</code> dry-runs every dataset folder that has an <code>expected.json</code>, and compares Chap's answer
+with it: the number of org units imported and rejected, or the error Chap gives. It prints one
+line per dataset, <code>ok</code> or <code>FAIL</code>, and ends with an error if any dataset gave another answer.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FOLDER</code></td>
+<td>The folder holding the dataset folders. Default <code>datasets</code>.</td>
+</tr>
+<tr>
+<td><code>--dhis2</code></td>
+<td>Send the uploads through the DHIS2 route instead of straight to Chap.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="through-dhis2">Through DHIS2<a class="headerlink" href="#through-dhis2" title="Permanent link">&para;</a></h2>
+<p>With <code>--dhis2</code> the upload goes to DHIS2's route for Chap, which passes it on, as the Modeling
+App's uploads do. The answer is the same as without DHIS2. DHIS2 2.42.3 and later send each file
+on twice (<a href="https://dhis2.atlassian.net/browse/DHIS2-22596">DHIS2-22596</a>); Chap uses one copy and
+ignores the other.</p>
 <h2 id="with-curl">With curl<a class="headerlink" href="#with-curl" title="Permanent link">&para;</a></h2>
-<p>The same, without Python:</p>
+<p>The same, without Python: <code>upload.sh</code> uploads one dataset and <code>check-all.sh</code> checks them all.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./upload.sh<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./upload.sh<span class="w"> </span>--dry-run<span class="w"> </span>--json<span class="w"> </span>datasets/03-facility-points<span class="w">     </span><span class="c1"># the make-dataset JSON body instead</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./upload.sh<span class="w"> </span>--dry-run<span class="w"> </span>--json<span class="w"> </span>datasets/03-facility-points
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./upload.sh<span class="w"> </span>--dhis2<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./check-all.sh<span class="w">                                               </span><span class="c1"># every dataset against expected.json</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/v1/crud/datasets/files?dryRun=true"</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">observations</span><span class="o">=</span>@datasets/03-facility-points/observations.parquet<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">locations</span><span class="o">=</span>@datasets/03-facility-points/locations.parquet
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>curl<span class="w"> </span>-u<span class="w"> </span>admin:district<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="s2">"http://localhost:8080/api/routes/chap/run/v1/crud/datasets/files?dryRun=true"</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">observations</span><span class="o">=</span>@datasets/03-facility-points/observations.parquet<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">locations</span><span class="o">=</span>@datasets/03-facility-points/locations.parquet
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./check-all.sh
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>./check-all.sh<span class="w"> </span>--dhis2
 </code></pre></div>
-<p>With a token, add <code>-H "Authorization: Bearer ..."</code> to curl, or set <code>CHAP_API_TOKEN</code>.</p>
-<h2 id="results">Results<a class="headerlink" href="#results" title="Permanent link">&para;</a></h2>
-<p>Measured on a MacBook with Docker Desktop, chap-core <code>feat/dataset-parquet-upload</code>:</p>
-<ul>
-<li>Every dataset gave the expected answer, directly and through DHIS2 routes on 2.41.11, 2.42.7.1
-  and 2.43.2.1, and a real import of <code>03-facility-points</code> succeeded through each.</li>
-<li>Real imports took 4 to 6 s for the request at 1,500 to 2,000 facilities, and about 20 s with
-  large polygons, where checking the geometry takes most of the time. The worker then stores the
-  data in the background: 54 s at 1,500 facilities, 70 s at 2,000.</li>
-<li>The DHIS2 route's timeout (30 s in the Modeling App, 60 s at most) counts from the end of the
-  upload, so a slow upload does not use it up.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Script</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td><code>upload.sh</code></td>
+<td>Only check; Chap stores nothing.</td>
+</tr>
+<tr>
+<td><code>--dhis2</code></td>
+<td>both</td>
+<td>Go through the DHIS2 route instead of straight to Chap.</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td><code>upload.sh</code></td>
+<td>Send the folder's <code>make-dataset.columns.json</code> to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs <code>--format json-columns</code>.</td>
+</tr>
+<tr>
+<td><code>BANDWIDTH=MBIT</code></td>
+<td><code>upload.sh</code></td>
+<td>An environment variable: send no faster than this many Mbit/s.</td>
+</tr>
+</tbody>
+</table>
+<p>Both read the <a href="../getting-started/#connection-settings">connection settings</a> from the environment.
+Or with curl alone:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/v1/crud/datasets/files?dryRun=true"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">observations</span><span class="o">=</span>@datasets/03-facility-points/observations.parquet<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">locations</span><span class="o">=</span>@datasets/03-facility-points/locations.parquet
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">ROUTE</span><span class="o">=</span>http://localhost:8080/api/routes/chap/run
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>curl<span class="w"> </span>-u<span class="w"> </span>admin:district<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"</span><span class="nv">$ROUTE</span><span class="s2">/v1/crud/datasets/files?dryRun=true"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">observations</span><span class="o">=</span>@datasets/03-facility-points/observations.parquet<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">locations</span><span class="o">=</span>@datasets/03-facility-points/locations.parquet
+</code></pre></div>
+<p>If Chap needs a token, add <code>-H "Authorization: Bearer &lt;token&gt;"</code> to the first.</p>
+<h2 id="how-long-it-takes">How long it takes<a class="headerlink" href="#how-long-it-takes" title="Permanent link">&para;</a></h2>
+<p>Chap answers in 4 to 6 seconds for 1,500 to 2,000 facilities of weekly data over 7 years, and in
+about 20 seconds when the org units are detailed areas, because checking the shapes takes most of
+the time. It then stores the dataset in the background: about a minute for 1,500 facilities.</p>
+<p>The DHIS2 route has a timeout (30 seconds in the Modeling App, 60 at most), but it only starts
+once the upload has arrived, so a slow upload does not use it up.</p>
 
 
 

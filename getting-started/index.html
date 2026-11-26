@@ -371,10 +371,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#start-dhis2-for-the-route" class="md-nav__link">
+  <a href="#start-dhis2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Start DHIS2 (for the route)
+        Start DHIS2
       
     </span>
   </a>
@@ -694,10 +694,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#start-dhis2-for-the-route" class="md-nav__link">
+  <a href="#start-dhis2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Start DHIS2 (for the route)
+        Start DHIS2
       
     </span>
   </a>
@@ -759,74 +759,124 @@
 
 <h1 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<p>You need <a href="https://docs.astral.sh/uv/">uv</a> and Python 3.13 (uv installs it for you).</p>
+<p>You need <a href="https://docs.astral.sh/uv/">uv</a>, which also installs the Python version it needs (3.13).</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/dhis2-chap/chap-test-data<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>chap-test-data
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>sync
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>--help
 </code></pre></div>
-<p>Generating datasets needs nothing else. Uploading needs a running Chap, and the DHIS2 route a
-running DHIS2; both run in Docker.</p>
+<p>That is all you need to generate datasets. To upload them you also need a running Chap, and to
+upload through DHIS2 a running DHIS2. Both run in Docker, as below.</p>
 <h2 id="start-chap">Start Chap<a class="headerlink" href="#start-chap" title="Permanent link">&para;</a></h2>
-<p>The Parquet upload is on the chap-core branch <code>feat/dataset-parquet-upload</code>:</p>
+<p>The Parquet upload is on the chap-core branch <code>feat/dataset-parquet-upload</code>. From a chap-core
+checkout next to this one:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>../chap-core
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>switch<span class="w"> </span>feat/dataset-parquet-upload
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>docker<span class="w"> </span>compose<span class="w"> </span>-p<span class="w"> </span>chap-test-data<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--build
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>curl<span class="w"> </span>localhost:8000/health
 </code></pre></div>
-<p>The project name <code>chap-test-data</code> keeps this stack and its volumes apart from any other Chap you
-run. Chap answers on <code>http://localhost:8000</code>, without a token unless <code>CHAP_API_TOKEN</code> is set in
-chap-core's <code>.env</code>.</p>
-<h2 id="start-dhis2-for-the-route">Start DHIS2 (for the route)<a class="headerlink" href="#start-dhis2-for-the-route" title="Permanent link">&para;</a></h2>
-<p><code>dhis2/</code> holds a DHIS2 that joins Chap's Docker network, and a script that creates the route
-<code>chap</code> pointing at Chap. The first start takes a minute or two.</p>
+<p><code>-p chap-test-data</code> gives this Chap its own name in Docker, so it and its data stay apart from
+any other Chap you run. It answers on <code>http://localhost:8000</code>, without a token unless
+<code>CHAP_API_TOKEN</code> is set in chap-core's <code>.env</code>.</p>
+<h2 id="start-dhis2">Start DHIS2<a class="headerlink" href="#start-dhis2" title="Permanent link">&para;</a></h2>
+<p>The Modeling App does not talk to Chap directly: it goes through a DHIS2 route, which passes its
+requests on to Chap. To test that path, <code>dhis2/</code> holds a DHIS2 that runs next to Chap, and a
+script that creates a route named <code>chap</code> pointing at it. The first start takes a minute or two.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>dhis2
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">          </span><span class="c1"># DHIS2 2.43.2.1</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./setup-route.sh<span class="w">              </span><span class="c1"># waits for DHIS2, then creates the route chap -&gt; http://chap:8000/**</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nb">cd</span><span class="w"> </span>..
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># waits until DHIS2 is up, then creates the route chap -&gt; http://chap:8000/**</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./setup-route.sh
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">cd</span><span class="w"> </span>..
 </code></pre></div>
-<p>Another DHIS2 version: <code>DHIS2_TAG=2.42.7.1 docker compose up -d</code>, after <code>docker compose down -v</code>
-so the database starts fresh. For a DHIS2 elsewhere, set the connection settings below and make
-sure it allows the route's target in <code>route.remote_servers_allowed</code>.</p>
+<p>For another DHIS2 version, remove the old one with its data first:
+<code>docker compose down -v</code>, then <code>DHIS2_TAG=2.42.7.1 docker compose up -d</code>. To use a DHIS2 that
+runs elsewhere, point the connection settings below at it, and make sure it allows the route's
+address in its <code>route.remote_servers_allowed</code> setting.</p>
 <h2 id="connection-settings">Connection settings<a class="headerlink" href="#connection-settings" title="Permanent link">&para;</a></h2>
-<p>Every command that talks to Chap takes these as options or environment variables:</p>
+<p><code>upload</code>, <code>check</code> and <code>compare</code> find Chap and DHIS2 through these settings. Each can be given as
+an option before the command (<code>uv run chap-test-data --chap-url http://... check</code>) or as an
+environment variable.</p>
 <table>
 <thead>
 <tr>
-<th>Variable</th>
+<th>Option</th>
+<th>Environment variable</th>
 <th>Default</th>
+<th>What it is</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td><code>--chap-url</code></td>
 <td><code>CHAP_URL</code></td>
 <td><code>http://localhost:8000</code></td>
+<td>Where Chap's API answers.</td>
 </tr>
 <tr>
+<td><code>--chap-token</code></td>
 <td><code>CHAP_API_TOKEN</code></td>
 <td>none</td>
+<td>Chap's API token, if Chap is set up to require one.</td>
 </tr>
 <tr>
+<td><code>--dhis2-url</code></td>
 <td><code>DHIS2_URL</code></td>
 <td><code>http://localhost:8080</code></td>
+<td>Where DHIS2 answers, for uploads with <code>--dhis2</code>.</td>
 </tr>
 <tr>
-<td><code>DHIS2_USER</code>, <code>DHIS2_PASSWORD</code></td>
-<td><code>admin</code>, <code>district</code></td>
+<td><code>--dhis2-user</code></td>
+<td><code>DHIS2_USER</code></td>
+<td><code>admin</code></td>
+<td>The DHIS2 user name.</td>
 </tr>
 <tr>
+<td><code>--dhis2-password</code></td>
+<td><code>DHIS2_PASSWORD</code></td>
+<td><code>district</code></td>
+<td>The DHIS2 password.</td>
+</tr>
+<tr>
+<td><code>--route-code</code></td>
 <td><code>ROUTE_CODE</code></td>
 <td><code>chap</code></td>
+<td>The code of the DHIS2 route that passes requests on to Chap.</td>
 </tr>
 </tbody>
 </table>
+<p>The curl scripts read the same environment variables.</p>
 <h2 id="stop">Stop<a class="headerlink" href="#stop" title="Permanent link">&para;</a></h2>
+<p>This removes both, with their data:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>dhis2<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>down<span class="w"> </span>-v<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>..
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">cd</span><span class="w"> </span>../chap-core<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-p<span class="w"> </span>chap-test-data<span class="w"> </span>down<span class="w"> </span>-v
 </code></pre></div>
 <h2 id="developing">Developing<a class="headerlink" href="#developing" title="Permanent link">&para;</a></h2>
-<p><code>make lint</code> runs ruff, mypy and pyright, the same tools as chap-core. <code>make test</code> runs the
-tests, which need no running Chap. <code>make docs</code> builds this site, and <code>make build</code> the package.
-CI runs them on every push.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>make lint</code></td>
+<td>Fixes and checks the code style, and checks the types (ruff, mypy and pyright, as chap-core).</td>
+</tr>
+<tr>
+<td><code>make test</code></td>
+<td>Runs the tests. They need no running Chap.</td>
+</tr>
+<tr>
+<td><code>make docs</code></td>
+<td>Builds this site into <code>site/</code>. <code>make docs-serve</code> shows it at http://127.0.0.1:8000 while you edit.</td>
+</tr>
+<tr>
+<td><code>make build</code></td>
+<td>Builds the package.</td>
+</tr>
+</tbody>
+</table>
+<p>CI runs them on every push.</p>
 
 
 

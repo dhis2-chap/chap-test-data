@@ -718,13 +718,13 @@ dengue from health data reported in DHIS2 and from climate data, and helps count
 far those forecasts can be trusted.</p>
 <h2 id="why-it-exists">Why it exists<a class="headerlink" href="#why-it-exists" title="Permanent link">&para;</a></h2>
 <p>Chap is moving from datasets sent as JSON and stored one value per database row to datasets sent
-and stored as Parquet files. Testing that needs data in every size, from a handful of districts
-to 100,000 org units over ten years, and in every shape Chap must accept, reject in part or
-refuse. Real DHIS2 data cannot be shared freely and does not come in every size, so this tool
-generates it: realistic enough to behave like the real thing, with the answer Chap should give
-known in advance.</p>
-<p>It is also how the Parquet upload was measured: how much smaller and faster it is than today's
-JSON, directly and through DHIS2 routes, on fast and on slow, distant links.</p>
+and kept as Parquet files. Testing that needs data in every size, from a handful of districts to
+100,000 org units over ten years, and in every shape Chap must accept, accept in part or refuse.
+Real DHIS2 data cannot be shared freely and does not come in every size, so this tool makes it
+up: close enough to real data to behave like it, with the answer Chap should give known in
+advance.</p>
+<p>It also measures what the change brings: how much smaller and faster Parquet uploads are than
+today's JSON, straight to Chap and through DHIS2, on fast and on slow, distant connections.</p>
 <h2 id="related-projects">Related projects<a class="headerlink" href="#related-projects" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -736,15 +736,15 @@ JSON, directly and through DHIS2 routes, on fast and on slow, distant links.</p>
 <tbody>
 <tr>
 <td><a href="https://github.com/dhis2-chap/chap-core">chap-core</a></td>
-<td>The Chap platform: the API, the database, model runs and evaluation</td>
+<td>The Chap platform: its API, database, model runs and evaluation.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/dhis2-chap/chapkit">chapkit</a></td>
-<td>The toolkit for building Chap models as services; its test data generator sets the value ranges used here</td>
+<td>The toolkit for building Chap models as services. Its test data sets the value ranges used here.</td>
 </tr>
 <tr>
 <td><a href="https://chap.dhis2.org">Chap documentation</a></td>
-<td>The Chap project, its models and how to use the Modeling App</td>
+<td>The Chap project, its models and how to use the Modeling App.</td>
 </tr>
 </tbody>
 </table>
@@ -754,7 +754,7 @@ JSON, directly and through DHIS2 routes, on fast and on slow, distant links.</p>
 you push; CI runs both, and builds the package and this site.</p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
 <p><a href="https://github.com/dhis2-chap/chap-test-data/blob/main/LICENSE">GNU Affero General Public License v3</a>,
-as chap-core. The generated data is synthetic and free to use.</p>
+as chap-core. The datasets it makes are made up and free to use.</p>
 
 
 

@@ -581,43 +581,84 @@
 
 
 <h1 id="timing-the-checks">Timing the checks<a class="headerlink" href="#timing-the-checks" title="Permanent link">&para;</a></h1>
-<p>Once Chap stores datasets as files (Phase 2), an upload can be checked straight on the files,
-without a background worker. <code>time-checks</code> runs those checks on dataset folders, without Chap,
-and times each one:</p>
-<ul>
-<li>duplicate rows for one org unit and period</li>
-<li>periods per org unit, first and last</li>
-<li>org units with a gap in a covariate</li>
-<li>org units missing from the locations file</li>
-</ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>time-checks<span class="w"> </span>datasets/21-facilities-20k-weekly-10y<span class="w"> </span>datasets/23-org-units-100k-weekly-10y
-</code></pre></div>
-<p>It uses DuckDB to measure; which engine Chap will use is not decided. <code>--memory-limit</code> caps
-DuckDB's memory (default 1 GB); above it, DuckDB spills to disk.</p>
-<p>On a 12-core MacBook (2026-11-26):</p>
+<p>Today Chap stores a dataset one value per database row, in the background after the upload.
+Chap is moving to keeping each dataset as its Parquet files instead. Then an upload could be
+checked and stored while the user waits, if checking the files is fast enough.</p>
+<p><code>time-checks</code> answers that. It runs the checks Chap would make on each dataset folder you give
+it, straight on the files and without Chap, and says how long each took and what it found:</p>
 <table>
 <thead>
 <tr>
-<th>Rows</th>
-<th>All checks</th>
-<th>Peak memory</th>
+<th>Check</th>
+<th>What it looks for</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>10.4 million (20,000 facilities, 10 years weekly)</td>
+<td>duplicate (location, time_period)</td>
+<td>An org unit with more than one row for the same period</td>
+</tr>
+<tr>
+<td>periods per org unit, first and last</td>
+<td>How many periods each org unit has, and its first and last</td>
+</tr>
+<tr>
+<td>org units with a covariate gap</td>
+<td>Org units missing a value in a covariate</td>
+</tr>
+<tr>
+<td>org units missing from locations</td>
+<td>Org units with data but no location</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>time-checks<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>datasets/21-facilities-20k-weekly-10y<span class="w"> </span>datasets/23-org-units-100k-weekly-10y
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FOLDER ...</code></td>
+<td>The dataset folders to check.</td>
+</tr>
+<tr>
+<td><code>--memory-limit SIZE</code></td>
+<td>The most memory the checks may use, such as <code>1GB</code> (the default). Beyond it they use the disk instead, so a large dataset is slower but does not run out of memory.</td>
+</tr>
+</tbody>
+</table>
+<p>The checks run on DuckDB, a database that reads Parquet files directly; it stands in for
+whatever Chap ends up using.</p>
+<p>Results on a laptop with 12 cores:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th>All checks</th>
+<th>Memory used at most</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20,000 facilities, 10 years weekly: 10.4 million rows</td>
 <td>0.2 s</td>
 <td>about 0.9 GB</td>
 </tr>
 <tr>
-<td>52.2 million (100,000 org units, 10 years weekly)</td>
+<td>100,000 org units, 10 years weekly: 52.2 million rows</td>
 <td>3.7 s</td>
 <td>about 1.6 GB</td>
 </tr>
 </tbody>
 </table>
-<p>Nearly all the time goes to the duplicate check. Even the largest dataset is checked well within
-a DHIS2 route's timeout.</p>
+<p>Nearly all of the time goes to looking for duplicates. Even the largest dataset is checked in a
+few seconds, well within the time a DHIS2 route waits for an answer.</p>
 
 
 
