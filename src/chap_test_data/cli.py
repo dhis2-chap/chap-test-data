@@ -167,7 +167,8 @@ def generate(
     missing: Annotated[
         float,
         typer.Option(
-            help="The share of target values left empty, as real reporting has gaps (0.002 is 2 in 1,000).",
+            help="Leave some case counts (the target) empty at random, as weeks with no report would be. A "
+            "fraction: 0.002 is about 1 value in 500, 0 is none. Chap still imports these org units.",
             rich_help_panel=COLUMNS,
         ),
     ] = 0.002,

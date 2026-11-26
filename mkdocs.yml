@@ -33,7 +33,9 @@ extra_css:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
-  - Generating datasets: generating.md
+  - Datasets:
+      - Ready-made datasets: ready-made.md
+      - Generating your own: generating.md
   - Uploading and checking: uploading.md
   - Comparing with JSON: comparing.md
   - Timing the checks: checks.md

@@ -1,57 +1,6 @@
-# Generating datasets
+# Generating your own
 
-## The common datasets
-
-```bash
-./generate-datasets.sh                  # all, including the large ones: a few minutes and a few GB
-./generate-datasets.sh --standard-only  # the 16 standard ones only: seconds
-```
-
-They are written to `datasets/` with a fixed seed (42), so they are the same on every machine.
-Each is written as Parquet, as GeoJSON locations (`locations.geojson`) and as the JSON body the
-Modeling App sends today (`make-dataset.columns.json`). The datasets Chap must refuse are written
-as Parquet only.
-
-### Standard
-
-They use 4 value columns: disease_cases, population, rainfall and mean_temperature.
-
-| Dataset | Size | Expected answer |
-| --- | --- | --- |
-| `01-small-monthly` | 10 districts x 36 months | 10 imported |
-| `02-district-weekly` | 150 districts x 365 weeks | 150 imported |
-| `03-facility-points` | 1,500 facilities x 365 weeks | 1,500 imported |
-| `04-facility-polygons` | 1,500 areas x 365 weeks, 2,048 points per border | 1,500 imported |
-| `05-facility-points-2000` | 2,000 facilities x 365 weeks | 2,000 imported |
-| `06-geojson-locations` | 50 districts x 104 weeks, locations only as GeoJSON | 50 imported |
-| `07-masked-ranges` | 20 x 36 months, cases masked 201801 to 201803 by the metadata | 20 imported |
-| `08-no-metadata` | 10 x 24 months, no `chap.*` keys; the name comes from the file name | 10 imported |
-| `09-covariate-gaps` | 20 org units, 3 miss one covariate value | 17 imported, 3 rejected |
-| `10-missing-locations` | 20 org units, 4 missing from the locations file | 16 imported, 4 rejected |
-| `11-bad-duplicate-rows` | one row twice | 422 |
-| `12-bad-text-column` | a text column in the observations | 422 |
-| `13-bad-no-time-period` | no `time_period` column | 422 |
-| `14-bad-spec-version` | `chap.spec_version` 2 | 422 |
-| `15-bad-not-parquet` | a CSV file named `observations.parquet` | 422 |
-| `16-named-columns` | 20 x 36 months, columns malaria_cases, population, precipitation, temperature_2m | 20 imported |
-
-### Large
-
-10 years with all 10 value columns. Only the first fits Chap's Phase 1 upload (1 million rows,
-100 MB per file); the others are the size stored files (Phase 2) are designed for.
-
-| Dataset | Rows | Phase 1 answer |
-| --- | --- | --- |
-| `20-phase1-max-weekly-10y` | 1,900 x 522 weeks = 991,800 | 1,900 imported |
-| `21-facilities-20k-weekly-10y` | 20,000 x 522 = 10.4 million | 413, file too large |
-| `22-org-units-100k-monthly-10y` | 100,000 x 120 = 12 million | 413, file too large |
-| `23-org-units-100k-weekly-10y` | 100,000 x 522 = 52.2 million | 413, file too large |
-
-`23` gets no JSON body: it would be about 5 GB.
-
-## Your own
-
-Every dataset is one command, so a variation is one command too:
+`chap-test-data generate NAME` writes one dataset of any size and shape:
 
 ```bash
 uv run chap-test-data generate my-test --org-units 5000 --years 5 --period monthly
@@ -63,6 +12,9 @@ uv run chap-test-data generate --help
 
 The name is the folder the dataset is written to, under `datasets/` (change it with `--out`).
 All options are optional.
+For a ready-made set to start from, see [Ready-made datasets](ready-made.md).
+
+## Options
 
 ### Size and time
 
@@ -80,7 +32,7 @@ All options are optional.
 | --- | --- | --- |
 | `--columns N` | 10 | How many value columns, taken in this order: disease_cases, population, rainfall, mean_temperature, min_temperature, max_temperature, relative_humidity, soil_moisture, ndvi, elevation. Above 10 you get covariate_11, covariate_12 and so on. |
 | `--column NAME` | | Name the value columns yourself, one `--column` per column, in order. The first is the target (what models predict). Names from the list above get realistic values; other names get a seasonal covariate between 0 and 100. Replaces `--columns`. |
-| `--missing SHARE` | 0.002 | The share of target values left empty, as real reporting has gaps. 0.002 is 2 in every 1,000. |
+| `--missing SHARE` | 0.002 | Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these org units are still imported (a gap in a covariate is different: see `--covariate-gaps`). The case counts are the target, the first value column. |
 
 ### Locations
 
