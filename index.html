@@ -693,7 +693,7 @@
 <p>Made-up datasets for <a href="https://chap.dhis2.org">Chap</a>, in any size, and the tools to send them to
 Chap and check its answers.</p>
 <ul>
-<li><strong>Generate</strong> datasets from 10 to 100,000 org units over any number of years, weekly or
+<li><strong>Generate</strong> datasets from 10 to 100,000 locations over any number of years, weekly or
   monthly, with case counts, covariates and climate data.</li>
 <li><strong>Know the answer in advance.</strong> Each dataset comes with an <code>expected.json</code> saying what Chap
   should answer, including for the files it must refuse.</li>
@@ -710,7 +710,7 @@ Chap and check its answers.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>sync
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># 16 ready-made datasets in datasets/</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>scripts/generate-ready-made.sh<span class="w"> </span>--standard-only
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>my-country<span class="w"> </span>--org-units<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>my-country<span class="w"> </span>--locations<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--geometry<span class="w"> </span>polygon<span class="w"> </span>--format<span class="w"> </span>geojson
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># needs a running Chap; see Getting started</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check
@@ -725,8 +725,8 @@ Chap and check its answers.</p>
 </thead>
 <tbody>
 <tr>
-<td>org unit</td>
-<td>A place data is reported for, as DHIS2 calls it: a district, or a health facility.</td>
+<td>location</td>
+<td>A place data is reported for, such as a district or a health facility. In DHIS2, an organisation unit (org unit).</td>
 </tr>
 <tr>
 <td>target</td>
@@ -766,11 +766,11 @@ Chap and check its answers.</p>
 <tbody>
 <tr>
 <td><code>observations.parquet</code></td>
-<td>One row per org unit and period: <code>location</code> (the org unit's id), <code>time_period</code>, then one number column per value. The dataset's settings, such as its name, are stored inside the file.</td>
+<td>One row per location and period: <code>location</code> (the location's id), <code>time_period</code>, then one number column per value. The dataset's settings, such as its name, are stored inside the file.</td>
 </tr>
 <tr>
 <td><code>locations.parquet</code></td>
-<td>One row per org unit: its id, <code>name</code>, <code>parent</code> (the area it lies in), <code>level</code> (3 for districts, 4 for facilities) and its point or shape on the map.</td>
+<td>One row per location: its id, <code>name</code>, <code>parent</code> (the area it lies in), <code>level</code> (3 for districts, 4 for facilities) and its point or shape on the map.</td>
 </tr>
 <tr>
 <td><code>locations.geojson</code></td>
@@ -778,7 +778,7 @@ Chap and check its answers.</p>
 </tr>
 <tr>
 <td><code>hierarchy.geojson</code></td>
-<td>The areas above the org units, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a <code>parent</code> one level up.</td>
+<td>The areas above the locations, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a <code>parent</code> one level up.</td>
 </tr>
 <tr>
 <td><code>make-dataset.columns.json</code></td>

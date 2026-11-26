@@ -11,7 +11,7 @@ uv run chap-test-data upload --dry-run datasets/03-facility-points
 uv run chap-test-data upload --wait datasets/03-facility-points
 ```
 
-`upload` sends the dataset folder's `observations.parquet` and its locations file to Chap, and prints Chap's answer: how many org units it will import, which it rejects and why, or the error if it refuses the files.
+`upload` sends the dataset folder's `observations.parquet` and its locations file to Chap, and prints Chap's answer: how many locations it will import, which it rejects and why, or the error if it refuses the files.
 
 | Option             | What it does                                                                                                                                                                                                                                        |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@ uv run chap-test-data check --dhis2
 uv run chap-test-data check my-datasets/
 ```
 
-`check` dry-runs every dataset folder that has an `expected.json`, and compares Chap's answer with it: the number of org units imported and rejected, or the error Chap gives. It prints one line per dataset, `ok` or `FAIL`, and ends with an error if any dataset gave another answer.
+`check` dry-runs every dataset folder that has an `expected.json`, and compares Chap's answer with it: the number of locations imported and rejected, or the error Chap gives. It prints one line per dataset, `ok` or `FAIL`, and ends with an error if any dataset gave another answer.
 
 | Option    | What it does                                                          |
 | --------- | --------------------------------------------------------------------- |
@@ -80,6 +80,6 @@ If Chap needs a token, add `-H "Authorization: Bearer <token>"` to the first.
 
 ## How long it takes
 
-Chap answers in 4 to 6 seconds for 1,500 to 2,000 facilities of weekly data over 7 years, and in about 20 seconds when the org units are detailed areas, because checking the shapes takes most of the time. It then stores the dataset in the background: about a minute for 1,500 facilities.
+Chap answers in 4 to 6 seconds for 1,500 to 2,000 facilities of weekly data over 7 years, and in about 20 seconds when the locations are detailed areas, because checking the shapes takes most of the time. It then stores the dataset in the background: about a minute for 1,500 facilities.
 
 The DHIS2 route has a timeout (30 seconds in the Modeling App, 60 at most), but it only starts once the upload has arrived, so a slow upload does not use it up.

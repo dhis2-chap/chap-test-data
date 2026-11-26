@@ -525,10 +525,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#org-units-chap-must-reject" class="md-nav__link">
+  <a href="#locations-chap-must-reject" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Org units Chap must reject
+        Locations Chap must reject
       
     </span>
   </a>
@@ -824,10 +824,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#org-units-chap-must-reject" class="md-nav__link">
+  <a href="#locations-chap-must-reject" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Org units Chap must reject
+        Locations Chap must reject
       
     </span>
   </a>
@@ -927,13 +927,13 @@
 
 <h1 id="generating-your-own">Generating your own<a class="headerlink" href="#generating-your-own" title="Permanent link">&para;</a></h1>
 <p><code>chap-test-data generate NAME</code> writes one dataset of any size and shape:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>my-test<span class="w"> </span>--org-units<span class="w"> </span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>my-test<span class="w"> </span>--locations<span class="w"> </span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--years<span class="w"> </span><span class="m">5</span><span class="w"> </span>--period<span class="w"> </span>monthly
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>districts<span class="w"> </span>--org-units<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>districts<span class="w"> </span>--locations<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--geometry<span class="w"> </span>polygon<span class="w"> </span>--format<span class="w"> </span>geojson
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>malaria<span class="w"> </span>--column<span class="w"> </span>malaria_cases<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--column<span class="w"> </span>population<span class="w"> </span>--column<span class="w"> </span>precipitation
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>gaps<span class="w"> </span>--org-units<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>gaps<span class="w"> </span>--locations<span class="w"> </span><span class="m">50</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>--covariate-gaps<span class="w"> </span><span class="m">5</span><span class="w"> </span>--drop-locations<span class="w"> </span><span class="m">2</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>generate<span class="w"> </span>--help
 </code></pre></div>
@@ -952,9 +952,9 @@ For a ready-made set to start from, see <a href="../ready-made/">Ready-made data
 </thead>
 <tbody>
 <tr>
-<td><code>--org-units N</code></td>
+<td><code>--locations N</code></td>
 <td>100</td>
-<td>How many org units (districts or facilities) the dataset has.</td>
+<td>How many locations (districts or facilities) the dataset has.</td>
 </tr>
 <tr>
 <td><code>--period weekly</code> or <code>--period monthly</code></td>
@@ -1001,7 +1001,7 @@ For a ready-made set to start from, see <a href="../ready-made/">Ready-made data
 <tr>
 <td><code>--missing SHARE</code></td>
 <td>0.002</td>
-<td>Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these org units are still imported (a gap in a covariate is different: see <code>--covariate-gaps</code>). The case counts are the target, the first value column.</td>
+<td>Leaves some case counts empty, at random, as weeks or months with no report would be. The share is a fraction: 0.002 is about 1 value in 500, 0 leaves none empty. Chap accepts empty case counts, so these locations are still imported (a gap in a covariate is different: see <code>--covariate-gaps</code>). The case counts are the target, the first value column.</td>
 </tr>
 </tbody>
 </table>
@@ -1018,12 +1018,12 @@ For a ready-made set to start from, see <a href="../ready-made/">Ready-made data
 <tr>
 <td><code>--geometry point</code></td>
 <td>default</td>
-<td>Each org unit is a point, like a health facility.</td>
+<td>Each location is a point, like a health facility.</td>
 </tr>
 <tr>
 <td><code>--geometry polygon</code></td>
 <td></td>
-<td>Each org unit is an area, like a district, with a jagged border shared with its neighbours.</td>
+<td>Each location is an area, like a district, with a jagged border shared with its neighbours.</td>
 </tr>
 <tr>
 <td><code>--corners N</code></td>
@@ -1098,8 +1098,8 @@ settings.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="org-units-chap-must-reject">Org units Chap must reject<a class="headerlink" href="#org-units-chap-must-reject" title="Permanent link">&para;</a></h3>
-<p>Chap accepts the dataset but leaves these org units out, and says which and why.
+<h3 id="locations-chap-must-reject">Locations Chap must reject<a class="headerlink" href="#locations-chap-must-reject" title="Permanent link">&para;</a></h3>
+<p>Chap accepts the dataset but leaves these locations out, and says which and why.
 <code>expected.json</code> counts them as rejected.</p>
 <table>
 <thead>
@@ -1113,12 +1113,12 @@ settings.</p>
 <tr>
 <td><code>--covariate-gaps N</code></td>
 <td>0</td>
-<td>The first N org units each miss one value in the last value column. Chap rejects an org unit with a gap in a covariate.</td>
+<td>The first N locations each miss one value in the last value column. Chap rejects a location with a gap in a covariate.</td>
 </tr>
 <tr>
 <td><code>--drop-locations N</code></td>
 <td>0</td>
-<td>The last N org units have data but no location in the locations file. Chap rejects an org unit it cannot place on the map.</td>
+<td>The last N locations have data but are left out of the locations file. Chap rejects a location it cannot place on the map.</td>
 </tr>
 </tbody>
 </table>
@@ -1136,7 +1136,7 @@ settings.</p>
 <tr>
 <td><code>--duplicate-rows N</code></td>
 <td>0</td>
-<td>The first N rows are written twice, so an org unit has two values for the same period.</td>
+<td>The first N rows are written twice, so a location has two values for the same period.</td>
 </tr>
 <tr>
 <td><code>--text-column NAME</code></td>
@@ -1177,7 +1177,7 @@ settings.</p>
 </tr>
 </tbody>
 </table>
-<p>The observations are written in batches of org units, so memory stays small: 52 million rows
+<p>The observations are written in batches of locations, so memory stays small: 52 million rows
 take about 25 s and 650 MB. The other formats are converted from the Parquet files in batches
 too.</p>
 <h2 id="formats">Formats<a class="headerlink" href="#formats" title="Permanent link">&para;</a></h2>
@@ -1191,7 +1191,7 @@ too.</p>
 <tbody>
 <tr>
 <td>(always)</td>
-<td><code>observations.parquet</code>, <code>locations.parquet</code>, and <code>hierarchy.geojson</code>: the country, regions and districts above the org units</td>
+<td><code>observations.parquet</code>, <code>locations.parquet</code>, and <code>hierarchy.geojson</code>: the country, regions and districts above the locations</td>
 </tr>
 <tr>
 <td><code>geojson</code></td>
@@ -1228,7 +1228,7 @@ ranges:</p>
 </tr>
 <tr>
 <td>rainfall</td>
-<td>150 +/- 130 mm per period, following each org unit's own season</td>
+<td>150 +/- 130 mm per period, following each location's own season</td>
 </tr>
 <tr>
 <td>mean_temperature</td>
@@ -1236,7 +1236,7 @@ ranges:</p>
 </tr>
 <tr>
 <td>disease_cases</td>
-<td>a per-org-unit level that follows the season, plus 0.06 x rainfall</td>
+<td>a per-location level that follows the season, plus 0.06 x rainfall</td>
 </tr>
 <tr>
 <td>other covariates</td>
@@ -1245,7 +1245,7 @@ ranges:</p>
 </tbody>
 </table>
 <p>The schema is Chap's, not chapkit's: periods as Chap stores them (<code>2016W01</code>, <code>201601</code>, with real
-ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
+ISO weeks, so some years have a week 53) and DHIS2-style location ids.</p>
 <h2 id="the-map">The map<a class="headerlink" href="#the-map" title="Permanent link">&para;</a></h2>
 <p><img alt="Generated districts and facilities" src="../assets/locations.png" /></p>
 <ul>
@@ -1258,7 +1258,7 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
 <li>Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.</li>
 </ul>
 <h2 id="the-hierarchy">The hierarchy<a class="headerlink" href="#the-hierarchy" title="Permanent link">&para;</a></h2>
-<p>As in DHIS2, the org units sit in a tree of areas, written to <code>hierarchy.geojson</code>:</p>
+<p>As in DHIS2, the locations sit in a tree of areas, written to <code>hierarchy.geojson</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1284,21 +1284,21 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.</p>
 <tr>
 <td>3</td>
 <td>Districts</td>
-<td>the org units, in <code>locations.*</code></td>
+<td>the locations, in <code>locations.*</code></td>
 <td>in <code>hierarchy.geojson</code>, about 50 facilities each (<code>--facilities-per-district</code>)</td>
 </tr>
 <tr>
 <td>4</td>
 <td>Facilities</td>
 <td></td>
-<td>the org units, in <code>locations.*</code></td>
+<td>the locations, in <code>locations.*</code></td>
 </tr>
 </tbody>
 </table>
-<p>Every area and org unit has a <code>level</code>, and a <code>parent</code>: the id of the area one level up that it
+<p>Every area and location has a <code>level</code>, and a <code>parent</code>: the id of the area one level up that it
 lies inside. The country has no parent. The areas of each level tile the whole country, and each
 region is a single piece. Open <code>hierarchy.geojson</code> with <code>locations.geojson</code> in a map tool to see
-the org units inside their districts and regions.</p>
+the locations inside their districts and regions.</p>
 
 
 

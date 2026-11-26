@@ -745,7 +745,7 @@
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>upload<span class="w"> </span>--wait<span class="w"> </span>datasets/03-facility-points
 </code></pre></div>
 <p><code>upload</code> sends the dataset folder's <code>observations.parquet</code> and its locations file to Chap, and
-prints Chap's answer: how many org units it will import, which it rejects and why, or the error
+prints Chap's answer: how many locations it will import, which it rejects and why, or the error
 if it refuses the files.</p>
 <table>
 <thead>
@@ -782,7 +782,7 @@ if it refuses the files.</p>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>uv<span class="w"> </span>run<span class="w"> </span>chap-test-data<span class="w"> </span>check<span class="w"> </span>my-datasets/
 </code></pre></div>
 <p><code>check</code> dry-runs every dataset folder that has an <code>expected.json</code>, and compares Chap's answer
-with it: the number of org units imported and rejected, or the error Chap gives. It prints one
+with it: the number of locations imported and rejected, or the error Chap gives. It prints one
 line per dataset, <code>ok</code> or <code>FAIL</code>, and ends with an error if any dataset gave another answer.</p>
 <table>
 <thead>
@@ -866,7 +866,7 @@ Or with curl alone:</p>
 <p>If Chap needs a token, add <code>-H "Authorization: Bearer &lt;token&gt;"</code> to the first.</p>
 <h2 id="how-long-it-takes">How long it takes<a class="headerlink" href="#how-long-it-takes" title="Permanent link">&para;</a></h2>
 <p>Chap answers in 4 to 6 seconds for 1,500 to 2,000 facilities of weekly data over 7 years, and in
-about 20 seconds when the org units are detailed areas, because checking the shapes takes most of
+about 20 seconds when the locations are detailed areas, because checking the shapes takes most of
 the time. It then stores the dataset in the background: about a minute for 1,500 facilities.</p>
 <p>The DHIS2 route has a timeout (30 seconds in the Modeling App, 60 at most), but it only starts
 once the upload has arrived, so a slow upload does not use it up.</p>
