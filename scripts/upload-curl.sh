@@ -2,10 +2,11 @@
 # Upload one dataset folder to Chap's POST /v1/crud/datasets/files with plain curl, directly or
 # through a DHIS2 route. The same as `chap-test-data upload`, for machines without Python.
 #
-# Usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] datasets/<name>
+# Usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] [--wait] datasets/<name>
 #
 #   --dhis2    go through the DHIS2 route ($DHIS2_URL/api/routes/$ROUTE_CODE/run/...)
 #   --dry-run  validate only (dryRun=true); nothing is imported
+#   --wait     after a real import, wait until Chap has stored the dataset and print its id
 #   --json     send the folder's make-dataset.columns.json to make-dataset instead, as the Modeling
 #              App does today (generate the dataset with --format json-columns)
 #
@@ -28,16 +29,18 @@ ROUTE_CODE=${ROUTE_CODE:-chap}
 via=direct
 query=""
 json=false
+wait=false
 while [[ $# -gt 0 && $1 == --* ]]; do
   case $1 in
     --dhis2) via=dhis2 ;;
     --dry-run) query="?dryRun=true" ;;
     --json) json=true ;;
+    --wait) wait=true ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
 done
-dir=${1:?usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] datasets/<name>}
+dir=${1:?usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] [--wait] datasets/<name>}
 
 observations=$dir/observations.parquet
 locations=$dir/locations.parquet
@@ -54,12 +57,13 @@ fi
 
 auth=()
 if [[ $via == dhis2 ]]; then
-  url="$DHIS2_URL/api/routes/$ROUTE_CODE/run/$path$query"
+  base="$DHIS2_URL/api/routes/$ROUTE_CODE/run"
   auth=(-u "$DHIS2_USER:$DHIS2_PASSWORD")
 else
-  url="$CHAP_URL/$path$query"
+  base=$CHAP_URL
   [[ -n ${CHAP_API_TOKEN:-} ]] && auth=(-H "Authorization: Bearer $CHAP_API_TOKEN")
 fi
+url="$base/$path$query"
 
 limit=()
 if [[ -n ${BANDWIDTH:-} ]]; then
@@ -75,5 +79,31 @@ elif [[ -n ${CHAP_API_TOKEN:-} ]]; then
 fi
 show curl -sS ${shown_auth[@]+"${shown_auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}"
 
-curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}" \
-  -w $'\nHTTP %{http_code} in %{time_total}s\n'
+answer=$(curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}" \
+  -w $'\nHTTP %{http_code} in %{time_total}s')
+printf '%s\n' "$answer"
+
+# The first value of a JSON field in an answer, without needing jq or Python.
+field() {
+  grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"\{0,1\}[^\",}]*" <<<"$2" | head -1 | sed 's/^[^:]*:[[:space:]]*"\{0,1\}//'
+}
+
+if [[ $wait == true && -z $query ]]; then
+  [[ ${answer##*$'\n'} == "HTTP 200 "* ]] || exit 1
+  job=$(field id "$answer")
+  [[ -n $job ]] || { echo "no job id in the answer" >&2; exit 1; }
+  show curl -sS ${shown_auth[@]+"${shown_auth[@]}"} "$base/v1/jobs/$job"
+  printf 'waiting for job %s' "$job" >&2
+  for _ in $(seq 1 600); do
+    info=$(curl -sS ${auth[@]+"${auth[@]}"} "$base/v1/jobs/$job")
+    status=$(field status "$info")
+    case $status in
+      SUCCESS) printf ' done\n' >&2; printf 'dataset id: %s\n' "$(field result "$info")"; exit 0 ;;
+      FAILURE) printf ' failed: %s\n' "$(field error "$info")" >&2; exit 1 ;;
+    esac
+    printf '.' >&2
+    sleep 3
+  done
+  echo " still not done after 30 minutes" >&2
+  exit 1
+fi

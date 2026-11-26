@@ -58,6 +58,7 @@ The same, without Python: `scripts/upload-curl.sh` uploads one dataset and `scri
 scripts/upload-curl.sh --dry-run datasets/03-facility-points
 scripts/upload-curl.sh --dry-run --json datasets/03-facility-points
 scripts/upload-curl.sh --dhis2 --dry-run datasets/03-facility-points
+scripts/upload-curl.sh --wait datasets/03-facility-points
 scripts/check-curl.sh
 scripts/check-curl.sh --dhis2
 ```

@@ -58,8 +58,8 @@ def compare_dataset(
         worker = ""
         job = last.body.get("id") if isinstance(last.body, dict) else None
         if wait and not dry_run and last.http == 200 and job:
-            status, run_time = wait_for_job(target, job)
-            worker = f"{run_time:.1f} s" if status == "SUCCESS" and run_time is not None else status
+            stored = wait_for_job(target, job)
+            worker = f"{stored.seconds:.1f} s" if stored.status == "SUCCESS" and stored.seconds else stored.status
         imported = last.body.get("importedCount") if isinstance(last.body, dict) else None
         outcome = imported if last.http == 200 else last.detail[:120]
         if fmt == "parquet":

@@ -390,8 +390,13 @@ def upload(
     typer.echo(f"HTTP {answer.http} in {answer.seconds:.2f} s, {answer.bytes / 1e6:,.2f} MB sent")
     job = answer.body.get("id") if isinstance(answer.body, dict) else None
     if wait and job and not dry_run:
-        status, seconds = wait_for_job(State.target, job)
-        typer.echo(f"job {job}: {status}" + (f" in {seconds:.1f} s" if seconds is not None else ""))
+        outcome = wait_for_job(State.target, job)
+        took = f" in {outcome.seconds:.1f} s" if outcome.seconds is not None else ""
+        typer.echo(f"job {job}: {outcome.status}{took}")
+        if outcome.dataset_id:
+            typer.echo(f"dataset id: {outcome.dataset_id}")
+        elif outcome.error:
+            typer.echo(f"error: {outcome.error}")
     if answer.http != 200:
         raise typer.Exit(1)
 

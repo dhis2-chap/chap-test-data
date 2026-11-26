@@ -151,17 +151,35 @@ def post_make_dataset(target: Target, body: Path, dry_run: bool) -> Answer:
         return _answer(response, started, len(content))
 
 
-def wait_for_job(target: Target, job: str, timeout: float = 1800) -> tuple[str, float | None]:
-    """Poll Chap (directly, not through DHIS2) until the job ends; returns its status and run time."""
+class JobOutcome(BaseModel):
+    """How an import job ended."""
+
+    status: str
+    seconds: float | None = None
+    dataset_id: str | None = None
+    error: str | None = None
+
+
+def wait_for_job(target: Target, job: str, timeout: float = 1800) -> JobOutcome:
+    """Poll the job, the same way the upload went (straight or through DHIS2), until it ends.
+
+    On success the job's result is the new dataset's id.
+    """
     deadline = time.time() + timeout
-    with httpx2.Client(timeout=30) as client:
+    with target.client() as client:
         while time.time() < deadline:
-            info = client.get(f"{target.chap_url}/v1/jobs/{job}").json()
+            info = client.get(f"{target.base_url}/v1/jobs/{job}").json()
             if info.get("status") in ("SUCCESS", "FAILURE"):
                 start, end = (datetime.fromisoformat(info[k]) for k in ("start_time", "end_time"))
-                return info["status"], (end - start).total_seconds()
+                result = info.get("result")
+                return JobOutcome(
+                    status=info["status"],
+                    seconds=(end - start).total_seconds(),
+                    dataset_id=str(json.loads(result)) if info["status"] == "SUCCESS" and result else None,
+                    error=info.get("error"),
+                )
             time.sleep(3)
-    return "TIMEOUT", None
+    return JobOutcome(status="TIMEOUT")
 
 
 def matches(expected: Expected, answer: Answer) -> bool:
