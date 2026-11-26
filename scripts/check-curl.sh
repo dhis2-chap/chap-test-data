@@ -9,6 +9,7 @@ cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are
 args=()
 [[ ${1:-} == --dhis2 ]] && { args=(--dhis2); shift; }
 root=${1:-datasets}
+while [[ $root == */ && $root != / ]]; do root=${root%/}; done
 
 failed=0
 printf '%-34s %-6s %-38s %s\n' dataset result expected got

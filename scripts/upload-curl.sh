@@ -41,6 +41,7 @@ while [[ $# -gt 0 && $1 == --* ]]; do
   shift
 done
 dir=${1:?usage: scripts/upload-curl.sh [--dhis2] [--dry-run] [--json] [--wait] datasets/<name>}
+while [[ $dir == */ && $dir != / ]]; do dir=${dir%/}; done  # datasets/x/ (as tab completion writes it) is datasets/x
 
 observations=$dir/observations.parquet
 locations=$dir/locations.parquet
