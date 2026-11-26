@@ -808,12 +808,12 @@ App's uploads do. The answer is the same as without DHIS2. DHIS2 2.42.3 and late
 on twice (<a href="https://dhis2.atlassian.net/browse/DHIS2-22596">DHIS2-22596</a>); Chap uses one copy and
 ignores the other.</p>
 <h2 id="with-curl">With curl<a class="headerlink" href="#with-curl" title="Permanent link">&para;</a></h2>
-<p>The same, without Python: <code>upload.sh</code> uploads one dataset and <code>check-all.sh</code> checks them all.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./upload.sh<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>./upload.sh<span class="w"> </span>--dry-run<span class="w"> </span>--json<span class="w"> </span>datasets/03-facility-points
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./upload.sh<span class="w"> </span>--dhis2<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./check-all.sh
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>./check-all.sh<span class="w"> </span>--dhis2
+<p>The same, without Python: <code>scripts/upload-curl.sh</code> uploads one dataset and <code>scripts/check-curl.sh</code> checks them all.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>scripts/upload-curl.sh<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>scripts/upload-curl.sh<span class="w"> </span>--dry-run<span class="w"> </span>--json<span class="w"> </span>datasets/03-facility-points
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>scripts/upload-curl.sh<span class="w"> </span>--dhis2<span class="w"> </span>--dry-run<span class="w"> </span>datasets/03-facility-points
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>scripts/check-curl.sh
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>scripts/check-curl.sh<span class="w"> </span>--dhis2
 </code></pre></div>
 <table>
 <thead>
@@ -826,7 +826,7 @@ ignores the other.</p>
 <tbody>
 <tr>
 <td><code>--dry-run</code></td>
-<td><code>upload.sh</code></td>
+<td><code>scripts/upload-curl.sh</code></td>
 <td>Only check; Chap stores nothing.</td>
 </tr>
 <tr>
@@ -836,12 +836,12 @@ ignores the other.</p>
 </tr>
 <tr>
 <td><code>--json</code></td>
-<td><code>upload.sh</code></td>
+<td><code>scripts/upload-curl.sh</code></td>
 <td>Send the folder's <code>make-dataset.columns.json</code> to Chap's JSON endpoint instead, as the Modeling App does today. The dataset needs <code>--format json-columns</code>.</td>
 </tr>
 <tr>
 <td><code>BANDWIDTH=MBIT</code></td>
-<td><code>upload.sh</code></td>
+<td><code>scripts/upload-curl.sh</code></td>
 <td>An environment variable: send no faster than this many Mbit/s.</td>
 </tr>
 </tbody>

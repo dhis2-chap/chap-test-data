@@ -674,8 +674,8 @@
 <h1 id="ready-made-datasets">Ready-made datasets<a class="headerlink" href="#ready-made-datasets" title="Permanent link">&para;</a></h1>
 <p>A set of datasets for testing Chap, made with one script: the usual sizes, the cases Chap must
 reject or refuse, and a few very large ones.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./generate-datasets.sh<span class="w">                  </span><span class="c1"># all, with the large ones: minutes</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./generate-datasets.sh<span class="w"> </span>--standard-only<span class="w">  </span><span class="c1"># the 16 standard ones: seconds</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>scripts/generate-ready-made.sh<span class="w">                  </span><span class="c1"># all, with the large ones: minutes</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>scripts/generate-ready-made.sh<span class="w"> </span>--standard-only<span class="w">  </span><span class="c1"># the 16 standard ones: seconds</span>
 </code></pre></div>
 <p>All of them, with the large ones, take a few GB. They are written to <code>datasets/</code> with a fixed seed (42), so they are the same on every machine.
 Each is written as Parquet, as GeoJSON locations (<code>locations.geojson</code>) and as the JSON body the
@@ -810,7 +810,7 @@ for.</p>
 </tbody>
 </table>
 <p><code>23</code> gets no JSON body: it would be about 5 GB.</p>
-<p>Each one is a single <a href="../generating/"><code>generate</code></a> command in <code>generate-datasets.sh</code>, so a variation
+<p>Each one is a single <a href="../generating/"><code>generate</code></a> command in <code>scripts/generate-ready-made.sh</code>, so a variation
 of any of them is a matter of changing its options.</p>
 
 
