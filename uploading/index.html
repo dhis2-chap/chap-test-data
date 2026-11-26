@@ -761,7 +761,7 @@ if it refuses the files.</p>
 </tr>
 <tr>
 <td><code>--wait</code></td>
-<td>After a real import, wait until Chap has stored the dataset, and say how it went. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years.</td>
+<td>After a real import, wait until Chap has stored the dataset, then print its id (<code>dataset id: 42</code>), or the error if storing failed. Storing runs after Chap has answered, and takes about a minute for 1,500 facilities of weekly data over 7 years.</td>
 </tr>
 <tr>
 <td><code>--dhis2</code></td>
@@ -831,6 +831,11 @@ ignores the other.</p>
 <td>Only check; Chap stores nothing.</td>
 </tr>
 <tr>
+<td><code>--wait</code></td>
+<td><code>scripts/upload-curl.sh</code></td>
+<td>After a real import, wait until Chap has stored the dataset, then print its id.</td>
+</tr>
+<tr>
 <td><code>--dhis2</code></td>
 <td>both</td>
 <td>Go through the DHIS2 route instead of straight to Chap.</td>
@@ -847,7 +852,7 @@ ignores the other.</p>
 </tr>
 </tbody>
 </table>
-<p>Both read the <a href="../getting-started/#connection-settings">connection settings</a> from the environment.
+<p>Both read the <a href="../getting-started/#connection-settings">connection settings</a> from the environment, and print each command they run, with the password and token hidden.
 Or with curl alone:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/v1/crud/datasets/files?dryRun=true"</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">observations</span><span class="o">=</span>@datasets/03-facility-points/observations.parquet<span class="w"> </span><span class="se">\</span>
