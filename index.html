@@ -768,15 +768,15 @@ Chap and check its answers.</p>
 </tr>
 <tr>
 <td><code>locations.parquet</code></td>
-<td>One row per org unit: its id, <code>name</code>, <code>parent</code> (the area it lies in), <code>level</code> and its point or shape on the map.</td>
+<td>One row per org unit: its id, <code>name</code>, <code>parent</code> (the area it lies in), <code>level</code> (3 for districts, 4 for facilities) and its point or shape on the map.</td>
 </tr>
 <tr>
 <td><code>locations.geojson</code></td>
 <td>The same locations as GeoJSON, which most map tools open.</td>
 </tr>
 <tr>
-<td><code>parents.geojson</code></td>
-<td>The areas the org units lie in, so you can see that each one lies inside its parent.</td>
+<td><code>hierarchy.geojson</code></td>
+<td>The areas above the org units, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a <code>parent</code> one level up.</td>
 </tr>
 <tr>
 <td><code>make-dataset.columns.json</code></td>
@@ -788,7 +788,7 @@ Chap and check its answers.</p>
 </tr>
 </tbody>
 </table>
-<p><code>observations.parquet</code>, <code>locations.parquet</code>, <code>parents.geojson</code> and <code>expected.json</code> are always
+<p><code>observations.parquet</code>, <code>locations.parquet</code>, <code>hierarchy.geojson</code> and <code>expected.json</code> are always
 written; the others when you ask for them with <code>--format</code>, as the ready-made datasets do. The
 file format is described in chap-core's
 <a href="https://github.com/dhis2-chap/chap-core/blob/feat/dataset-parquet-upload/docs/webapi/dataset-files.md">dataset files documentation</a>.</p>
