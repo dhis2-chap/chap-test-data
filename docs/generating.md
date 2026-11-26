@@ -101,7 +101,7 @@ too.
 
 | `--format` | Files |
 | --- | --- |
-| (always) | `observations.parquet`, `locations.parquet`, and `parents.geojson`: the parent areas the org units lie in |
+| (always) | `observations.parquet`, `locations.parquet`, and `hierarchy.geojson`: the country, regions and districts above the org units |
 | `geojson` | `locations.geojson` |
 | `csv` | `observations.csv` (time_period, location, then the values) and `locations.geojson` |
 | `json-columns` | `make-dataset.columns.json`: the `make-dataset` body with `providedDataColumns`, as the Modeling App sends today |
@@ -132,8 +132,22 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.
   default, the median of chap-core's example boundaries, and is about 1.7 times as long as a
   circle of the same area, as real borders are (1.4 to 1.9 in those files).
 - **Facilities** (`--geometry point`) cluster around a few towns in each district, always inside
-  it, and the `parent` column names that district: one per 50 facilities.
-- **Parents** are written to `parents.geojson`, so the org units can be checked against them: for
-  facilities the districts they lie in, for districts the regions of about 50 neighbours they
-  make up. Every org unit lies inside the parent its `parent` column names.
+  it: about 50 facilities per district.
 - Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.
+
+## The hierarchy
+
+As in DHIS2, the org units sit in a tree of areas, written to `hierarchy.geojson`:
+
+| Level | Area | With `--geometry polygon` | With `--geometry point` |
+| --- | --- | --- | --- |
+| 1 | Country | in `hierarchy.geojson` | in `hierarchy.geojson` |
+| 2 | Regions, about 10 districts each | in `hierarchy.geojson` | in `hierarchy.geojson` |
+| 3 | Districts | the org units, in `locations.*` | in `hierarchy.geojson`, about 50 facilities each |
+| 4 | Facilities | | the org units, in `locations.*` |
+
+Every area and org unit has a `level`, and a `parent`: the id of the area one level up that it
+lies inside. The country has no parent. The areas of each level tile the whole country, and each
+region is a single piece. Open `hierarchy.geojson` with `locations.geojson` in a map tool to see
+the org units inside their districts and regions.
+

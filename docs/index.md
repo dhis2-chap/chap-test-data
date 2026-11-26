@@ -46,13 +46,13 @@ Every dataset is a folder, named after the dataset, holding the same data in sev
 | File | What it holds |
 | --- | --- |
 | `observations.parquet` | One row per org unit and period: `location` (the org unit's id), `time_period`, then one number column per value. The dataset's settings, such as its name, are stored inside the file. |
-| `locations.parquet` | One row per org unit: its id, `name`, `parent` (the area it lies in), `level` and its point or shape on the map. |
+| `locations.parquet` | One row per org unit: its id, `name`, `parent` (the area it lies in), `level` (3 for districts, 4 for facilities) and its point or shape on the map. |
 | `locations.geojson` | The same locations as GeoJSON, which most map tools open. |
-| `parents.geojson` | The areas the org units lie in, so you can see that each one lies inside its parent. |
+| `hierarchy.geojson` | The areas above the org units, as in DHIS2: the country (level 1), its regions (2) and, for facilities, their districts (3). Each has a `parent` one level up. |
 | `make-dataset.columns.json` | The same dataset as the JSON the Modeling App sends today. |
 | `expected.json` | What Chap should answer to a dry run of the Parquet files, and the seed the dataset was made with. |
 
-`observations.parquet`, `locations.parquet`, `parents.geojson` and `expected.json` are always
+`observations.parquet`, `locations.parquet`, `hierarchy.geojson` and `expected.json` are always
 written; the others when you ask for them with `--format`, as the ready-made datasets do. The
 file format is described in chap-core's
 [dataset files documentation](https://github.com/dhis2-chap/chap-core/blob/feat/dataset-parquet-upload/docs/webapi/dataset-files.md).

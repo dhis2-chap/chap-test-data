@@ -174,33 +174,53 @@ def test_impossible_settings_are_refused(tmp_path, options):
         generate(tmp_path, **options)
 
 
-def test_facilities_lie_inside_the_parent_district_named_in_their_parent_column(tmp_path):
-    directory, _ = generate(tmp_path, org_units=120)
-    facilities = gpd.read_parquet(directory / "locations.parquet")
-    parents = gpd.read_file(directory / "parents.geojson").set_index("id")
-    assert set(facilities["parent"]) == set(parents.index)
-    inside = [parents.geometry[row.parent].contains(row.geometry) for row in facilities.itertuples()]
-    assert all(inside)
+def read_hierarchy(directory):
+    return gpd.read_file(directory / "hierarchy.geojson").set_index("id")
 
 
-def test_areas_lie_inside_their_parent_region_and_regions_add_up_to_them(tmp_path):
+def assert_tree(org_units, hierarchy, levels):
+    """Each org unit and area lies inside the area its parent names, one level up, ending at the country."""
     import shapely
 
+    assert sorted(hierarchy["level"].unique()) == levels
+    country = hierarchy[hierarchy["level"] == 1]
+    assert len(country) == 1 and country["parent"].isna().all()
+    for _, area in hierarchy[hierarchy["level"] > 1].iterrows():
+        parent = hierarchy.loc[area["parent"]]
+        assert parent["level"] == area["level"] - 1
+        assert parent.geometry.buffer(1e-9).contains(area.geometry)
+    for row in org_units.itertuples():
+        parent = hierarchy.loc[row.parent]
+        assert parent["level"] == row.level - 1
+        assert parent.geometry.buffer(1e-9).contains(row.geometry)
+    # The areas of each level tile the country: their union is the country, without gaps or overlaps.
+    for level in levels[1:]:
+        areas = hierarchy[hierarchy["level"] == level].geometry.to_numpy()
+        assert abs(shapely.area(areas).sum() - country.geometry.iloc[0].area) < 1e-6 * country.geometry.iloc[0].area
+
+
+def test_facilities_sit_at_level_4_under_districts_regions_and_the_country(tmp_path):
+    directory, _ = generate(tmp_path, org_units=600)
+    facilities = gpd.read_parquet(directory / "locations.parquet")
+    hierarchy = read_hierarchy(directory)
+    assert set(facilities["level"]) == {4}
+    assert (hierarchy["level"] == 3).sum() == 12  # one district per 50 facilities
+    assert_tree(facilities, hierarchy, [1, 2, 3])
+
+
+def test_districts_sit_at_level_3_under_regions_and_the_country(tmp_path):
     directory, _ = generate(tmp_path, org_units=120, geometry="polygon", corners=64)
-    areas = gpd.read_parquet(directory / "locations.parquet")
-    regions = gpd.read_file(directory / "parents.geojson").set_index("id")
-    assert set(areas["parent"]) == set(regions.index) and len(regions) == 3
-    for region_id, members in areas.groupby("parent"):
-        union = shapely.union_all(members.geometry.to_numpy())
-        assert abs(union.area - regions.geometry[region_id].area) < 1e-6 * union.area
+    districts = gpd.read_parquet(directory / "locations.parquet")
+    hierarchy = read_hierarchy(directory)
+    assert set(districts["level"]) == {3}
+    assert (hierarchy["level"] == 2).sum() == 12  # one region per 10 districts
+    assert_tree(districts, hierarchy, [1, 2])
 
 
 def test_polygons_follow_the_geojson_right_hand_rule(tmp_path):
     import shapely
 
     directory, _ = generate(tmp_path, org_units=60, geometry="polygon", corners=64)
-    for name in ("locations.parquet",):
-        polygons = gpd.read_parquet(directory / name).geometry.to_numpy()
-        assert all(shapely.is_ccw(p.exterior) for p in polygons)
-    parents = gpd.read_file(directory / "parents.geojson").geometry.to_numpy()
-    assert all(shapely.is_ccw(p.exterior) for p in parents)
+    polygons = gpd.read_parquet(directory / "locations.parquet").geometry.to_numpy()
+    assert all(shapely.is_ccw(p.exterior) for p in polygons)
+    assert all(shapely.is_ccw(p.exterior) for p in read_hierarchy(directory).geometry)
