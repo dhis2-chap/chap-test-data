@@ -17,6 +17,9 @@ Chap and check its answers.
 
 **Documentation: https://dhis2-chap.github.io/chap-test-data/**
 
+For AI agents: [llms.txt](https://dhis2-chap.github.io/chap-test-data/llms.txt) says what the tool does and links to
+each page as Markdown; [llms-full.txt](https://dhis2-chap.github.io/chap-test-data/llms-full.txt) is all of it in one file.
+
 ## Quick start
 
 ```bash

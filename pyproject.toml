@@ -32,6 +32,7 @@ build-backend = "uv_build"
 dev = [
     "coverage>=7.17.5",
     "mkdocs>=1.6.1",
+    "mkdocs-llmstxt>=0.5.1",
     "mkdocs-material>=9.8.2",
     "mypy>=2.4.1",
     "pandas-stubs>=3.1.0.261029",
