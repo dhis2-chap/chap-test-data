@@ -172,3 +172,35 @@ def test_too_many_rows_expect_a_422(tmp_path, monkeypatch):
 def test_impossible_settings_are_refused(tmp_path, options):
     with pytest.raises(ValueError):
         generate(tmp_path, **options)
+
+
+def test_facilities_lie_inside_the_parent_district_named_in_their_parent_column(tmp_path):
+    directory, _ = generate(tmp_path, org_units=120)
+    facilities = gpd.read_parquet(directory / "locations.parquet")
+    parents = gpd.read_file(directory / "parents.geojson").set_index("id")
+    assert set(facilities["parent"]) == set(parents.index)
+    inside = [parents.geometry[row.parent].contains(row.geometry) for row in facilities.itertuples()]
+    assert all(inside)
+
+
+def test_areas_lie_inside_their_parent_region_and_regions_add_up_to_them(tmp_path):
+    import shapely
+
+    directory, _ = generate(tmp_path, org_units=120, geometry="polygon", corners=64)
+    areas = gpd.read_parquet(directory / "locations.parquet")
+    regions = gpd.read_file(directory / "parents.geojson").set_index("id")
+    assert set(areas["parent"]) == set(regions.index) and len(regions) == 3
+    for region_id, members in areas.groupby("parent"):
+        union = shapely.union_all(members.geometry.to_numpy())
+        assert abs(union.area - regions.geometry[region_id].area) < 1e-6 * union.area
+
+
+def test_polygons_follow_the_geojson_right_hand_rule(tmp_path):
+    import shapely
+
+    directory, _ = generate(tmp_path, org_units=60, geometry="polygon", corners=64)
+    for name in ("locations.parquet",):
+        polygons = gpd.read_parquet(directory / name).geometry.to_numpy()
+        assert all(shapely.is_ccw(p.exterior) for p in polygons)
+    parents = gpd.read_file(directory / "parents.geojson").geometry.to_numpy()
+    assert all(shapely.is_ccw(p.exterior) for p in parents)

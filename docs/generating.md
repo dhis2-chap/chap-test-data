@@ -82,7 +82,7 @@ too.
 
 | `--format` | Files |
 | --- | --- |
-| (always) | `observations.parquet`, `locations.parquet` |
+| (always) | `observations.parquet`, `locations.parquet`, and `parents.geojson`: the parent areas the org units lie in |
 | `geojson` | `locations.geojson` |
 | `csv` | `observations.csv` (time_period, location, then the values) and `locations.geojson` |
 | `json-columns` | `make-dataset.columns.json`: the `make-dataset` body with `providedDataColumns`, as the Modeling App sends today |
@@ -114,3 +114,11 @@ ISO weeks, so some years have a week 53) and DHIS2-style org unit ids.
   circle of the same area, as real borders are (1.4 to 1.9 in those files).
 - **Facilities** (`--geometry point`) cluster around a few towns in each district, always inside
   it, and the `parent` column names that district: one per 50 facilities.
+- **Parents** are written to `parents.geojson`, so the org units can be checked against them: for
+  facilities the districts they lie in, for districts the regions of about 50 neighbours they
+  make up. Every org unit lies inside the parent its `parent` column names.
+- Polygons follow the GeoJSON right-hand rule (RFC 7946): outer rings run counter-clockwise.
+
+All GeoJSON files were checked in [geojson.io](https://geojson.io) on 2026-11-26: imported, exported
+again and compared, every file kept its features, ids, properties and coordinates unchanged, and
+with the parents on the same map every org unit lay inside its own parent.

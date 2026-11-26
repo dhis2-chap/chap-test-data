@@ -300,11 +300,13 @@ def jagged_areas(n: int, corners: int, rng: np.random.Generator) -> tuple[np.nda
     return sites[chosen], polygons
 
 
-def facility_points(n: int, rng: np.random.Generator, per_district: int = 50) -> tuple[np.ndarray, np.ndarray]:
+def facility_points(
+    n: int, rng: np.random.Generator, per_district: int = 50
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """n facilities spread over a country of districts, clustered around a few towns per district.
 
     The districts are jagged_areas, one per `per_district` facilities, and each facility lies inside
-    its own district, so the `parent` column matches the map. Returns the points and their district.
+    its own district. Returns the points, each point's district and the district polygons.
     """
     district_count = max(1, int(np.ceil(n / per_district)))
     _, districts = jagged_areas(district_count, 64, rng)
@@ -322,7 +324,27 @@ def facility_points(n: int, rng: np.random.Generator, per_district: int = 50) ->
         outside = ~shapely.contains_xy(districts[d], points[:, 0], points[:, 1])
         points[outside] = _inside(districts[d], int(outside.sum()), bounds[d], rng)  # the far strays, anywhere inside
         x[members], y[members] = points[:, 0], points[:, 1]
-    return np.stack([x, y], axis=1), district
+    return np.stack([x, y], axis=1), district, districts
+
+
+def regions(sites: np.ndarray, areas: np.ndarray, per_region: int = 50) -> tuple[np.ndarray, np.ndarray]:
+    """Group neighbouring areas into regions of about `per_region`, as districts into provinces.
+
+    A few rounds of k-means on the areas' centre points keep each region in one piece; the region's
+    outline is the union of its areas. Returns each area's region and the region polygons.
+    """
+    count = max(1, int(np.ceil(len(sites) / per_region)))
+    centres = sites[np.linspace(0, len(sites) - 1, count).astype(int)]
+    region = np.zeros(len(sites), dtype=int)
+    for _ in range(20):
+        region = np.argmin(((sites[:, None, :] - centres[None, :, :]) ** 2).sum(axis=2), axis=1)
+        for k in range(count):
+            if (region == k).any():
+                centres[k] = sites[region == k].mean(axis=0)
+    used = np.unique(region)  # drop empty regions, numbering the rest 0, 1, ...
+    region = np.searchsorted(used, region)
+    outlines = np.array([shapely.union_all(areas[region == k]) for k in range(len(used))], dtype=object)
+    return region, outlines
 
 
 def _inside(polygon: Any, count: int, bounds: np.ndarray, rng: np.random.Generator) -> np.ndarray:
@@ -334,32 +356,50 @@ def _inside(polygon: Any, count: int, bounds: np.ndarray, rng: np.random.Generat
     return found[:count]
 
 
-def locations(ids: np.ndarray, corners: int | None, seed: int) -> gpd.GeoDataFrame:
+def locations(ids: np.ndarray, corners: int | None, seed: int) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Org units near Nairobi on a country-like map, about 0.8 degrees apart (as chapkit's generator).
 
     With corners, each org unit is an area with a jagged border of that many points (a district; see
-    jagged_areas). Without, it is a facility point, clustered around towns inside districts of 50
-    (see facility_points). Either way the parent column holds one parent id per 50 org units.
+    jagged_areas), and the parents are regions of about 50 neighbouring areas. Without, each org unit
+    is a facility point clustered around towns, and the parents are the districts of about 50
+    facilities they lie in (see facility_points). Returns the org units and their parents; each org
+    unit's `parent` is the id of the parent area it lies in.
     """
     rng = np.random.default_rng(seed)
     n = len(ids)
     geometry: Any
     if corners:
-        _, geometry = jagged_areas(n, corners, rng)
+        sites, geometry = jagged_areas(n, corners, rng)
+        group, outlines = regions(sites, geometry)
     else:
-        points, _ = facility_points(n, rng)
+        points, group, outlines = facility_points(n, rng)
         geometry = shapely.points(points)
-    parents = org_unit_ids(max(1, int(np.ceil(n / 50))), seed + 1)
-    return gpd.GeoDataFrame(
+    if corners:
+        # GeoJSON (RFC 7946) wants outer rings counter-clockwise, and GeoParquet recommends it.
+        geometry = shapely.orient_polygons(geometry, exterior_cw=False)
+    outlines = shapely.orient_polygons(outlines, exterior_cw=False)
+    parent_ids = org_unit_ids(len(outlines), seed + 1)
+    level = 3 if corners else 5
+    children = gpd.GeoDataFrame(
         {
             "location": ids,
             "name": [f"Org unit {i + 1}" for i in range(n)],
-            "parent": parents[np.arange(n) // 50],
-            "level": 3 if corners else 5,
+            "parent": parent_ids[group],
+            "level": level,
         },
         geometry=geometry,
         crs=4326,
     )
+    parents = gpd.GeoDataFrame(
+        {
+            "location": parent_ids,
+            "name": [f"{'Region' if corners else 'District'} {i + 1}" for i in range(len(outlines))],
+            "level": level - 1,
+        },
+        geometry=outlines,
+        crs=4326,
+    )
+    return children, parents
 
 
 def expected_answer(spec: DatasetSpec, rows: int, observations: Path, locations_path: Path) -> Expected:
@@ -427,7 +467,9 @@ def build(spec: DatasetSpec, directory: Path, progress: Callable[[int, int], Non
         assert writer is not None
         writer.close()
 
-    frame = locations(ids, spec.corners if spec.geometry == "polygon" else None, seed)
+    frame, parents = locations(ids, spec.corners if spec.geometry == "polygon" else None, seed)
+    # The parent areas, so the org units can be checked against the areas they lie in.
+    (directory / "parents.geojson").write_text(parents.set_index("location").to_json(drop_id=False))
     if spec.drop_locations:
         frame = frame.iloc[: len(frame) - spec.drop_locations]
     if spec.geojson:
