@@ -17,6 +17,7 @@
 #   ROUTE_CODE      the route's code in DHIS2             (default chap)
 #   BANDWIDTH       send at most this many Mbit/s, as a slow link would (default: as fast as possible)
 set -euo pipefail
+source "$(dirname "$0")/common.sh"
 
 CHAP_URL=${CHAP_URL:-http://localhost:8000}
 DHIS2_URL=${DHIS2_URL:-http://localhost:8080}
@@ -64,6 +65,15 @@ limit=()
 if [[ -n ${BANDWIDTH:-} ]]; then
   limit=(--limit-rate "$(awk -v m="$BANDWIDTH" 'BEGIN { printf "%d", m * 125000 }')")  # Mbit/s to bytes/s
 fi
+
+# Show the command, with the password and token hidden.
+shown_auth=()
+if [[ $via == dhis2 ]]; then
+  shown_auth=(-u "$DHIS2_USER:***")
+elif [[ -n ${CHAP_API_TOKEN:-} ]]; then
+  shown_auth=(-H "Authorization: Bearer ***")
+fi
+show curl -sS ${shown_auth[@]+"${shown_auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}"
 
 curl -sS ${auth[@]+"${auth[@]}"} ${limit[@]+"${limit[@]}"} -X POST "$url" "${body[@]}" \
   -w $'\nHTTP %{http_code} in %{time_total}s\n'

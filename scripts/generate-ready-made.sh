@@ -9,9 +9,13 @@
 # Usage: scripts/generate-ready-made.sh [--standard-only]     (--standard-only skips the large ones)
 set -euo pipefail
 cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are found
+source scripts/common.sh
 
 # A fixed seed, so these datasets are the same on every machine and every run.
-gen() { uv run --quiet chap-test-data generate --seed 42 "$@"; }
+gen() {
+  show uv run chap-test-data generate --seed 42 "$@"
+  uv run --quiet chap-test-data generate --seed 42 "$@"
+}
 formats=(--format geojson --format json-columns)
 monthly=(--period monthly --columns 4 --geometry polygon "${formats[@]}")
 weekly=(--period weekly --columns 4 "${formats[@]}")

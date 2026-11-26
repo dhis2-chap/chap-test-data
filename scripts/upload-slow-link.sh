@@ -13,6 +13,7 @@
 # http://chap:8000 and DHIS2 at http://web:8080 as seen from that network.
 set -euo pipefail
 cd "$(dirname "$0")/.."  # the repository root, so datasets/ and the scripts are found
+source scripts/common.sh
 
 delay=100ms
 rate=10mbit
@@ -25,7 +26,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-docker run --rm --cap-add NET_ADMIN --network "${CHAP_NETWORK:-chap-test-data_default}" \
+network=${CHAP_NETWORK:-chap-test-data_default}
+show docker run --rm --cap-add NET_ADMIN --network "$network" alpine:3.20
+show tc qdisc add dev eth0 root netem delay "$delay" rate "$rate"
+docker run --rm --cap-add NET_ADMIN --network "$network" \
   -v "$PWD:/work:ro" -w /work \
   -e CHAP_URL="${CHAP_URL:-http://chap:8000}" -e DHIS2_URL="${DHIS2_URL:-http://web:8080}" \
   -e CHAP_API_TOKEN="${CHAP_API_TOKEN:-}" -e DHIS2_USER="${DHIS2_USER:-admin}" \
@@ -33,5 +37,4 @@ docker run --rm --cap-add NET_ADMIN --network "${CHAP_NETWORK:-chap-test-data_de
   alpine:3.20 sh -c "
     apk add --no-cache --quiet bash curl iproute2 >/dev/null &&
     tc qdisc add dev eth0 root netem delay $delay rate $rate &&
-    echo 'link: $delay delay, $rate' &&
     scripts/upload-curl.sh ${args[*]} | tail -1"
